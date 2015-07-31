@@ -1,0 +1,36 @@
+ContactForm:
+	<h3>Get in Contact With Us</h3>
+	<br/>
+	<form method="post" role="form" class="message-form" action="send.php">				
+		<input type="text" name="name" class="form-control" placeholder="Name" />
+		<br />
+		<input type="text" name="email" class="form-control" placeholder="Email Address" />
+		<br />
+		<input type="text" name="phone" class="form-control" placeholder="Phone" />
+		<input type="hidden" name="honeypot" class="form-control" placeholder="Phone" />
+		<br />
+		<textarea name="mess" class="form-control" placeholder="Message (optional)"></textarea>
+		<br />
+		<button type="submit" class="btn btn-primary lets-talk"> Let's Talk </button>
+	</form>
+	
+ContactInfo:
+	<h3>Or Say Hello</h3>
+	<!--br/-->
+	<p>02 8889 8800</p>
+	<!--br/-->
+	<p>Suite 418, 5 Celebration Dr,</p>
+	<p>Bella Vista NSW 2153</p>
+	<!--br/-->
+	<p class="email"><a href="mailto:hello@commercify.me">hello@commercify.me</a></p>
+	<br/>
+	<a target="_blank" href="http://twitter.com/commercifyme"><img src="images/twitter.png"></a>
+	&nbsp;
+	<a target="_blank" href="http://facebook.com/commercifyme"><img src="images/facebook.png"></a>
+	<div class="fb-like-box" data-href="https://www.facebook.com/commercifyme" data-width="233" data-height="200" data-colorscheme="dark" data-show-faces="true" data-header="false" data-stream="false" data-show-border="false"></div>
+	
+Whoweare:
+	<p>Between us we have some serious ecommerce chops, and have helped thousands of businesses sell millions 
+	of dollars of products online. Now we've wrapped the decades of experience into a bespoke service 
+	to help you make the most of your your business online.</p>
+	

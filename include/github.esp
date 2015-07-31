@@ -1,0 +1,283 @@
+//TODO This should become open source -- I think we should be transparent in our QA attempts to foster good will
+//TODO complete the secret hash checking stuff
+(function(){
+
+	Server.Require("/include/common.esp");
+
+	var Callbacks = {
+		push: [],
+		pull: [],
+		ping: []
+	};
+
+	var ReceiveHooks = function() {
+
+
+		if(Request.IsSecure() && "HTTP_X_HUB_SIGNATURE" in Request.ServerVariables && Request.ServerVariables.HTTP_X_HUB_SIGNATURE
+			&& "HTTP_X_GITHUB_EVENT" in Request.ServerVariables && Request.ServerVariables.HTTP_X_GITHUB_EVENT) {
+
+			var Event = Request.ServerVariables["HTTP_X_GITHUB_EVENT"];
+			var Signature = Request.ServerVariables["HTTP_X-HUB-SIGNATURE"];  //HMAC hex digest of the body, using the secret as the key. Use this later
+
+			switch(Event) {
+				case "push":
+
+					for(var Callback of Callbacks.push) {
+
+
+						if(Callback.path.test(Request.ServerVariables.URL)) {
+
+							//TODO check secret .. decrypt hex digest and compare (after extension stuff is working)
+							var Secret = Callback.secret;
+
+
+							var CommitDetails = ("commits" in Request.Form && Request.Form["commits"] && Request.Form["commits"].length > 0)
+								? {sha1: Request.Form.commits[0].id, message: Request.Form.commits[0].message} : {	sha1: "", message: ""};
+
+							Callback.Fn({
+								"ref": Request.Form["ref"],
+								"branch": Request.Form["ref"].replace("refs/heads/", ""),
+								"sha1": CommitDetails.sha1,
+								"message": CommitDetails.message
+							});
+						}
+					}
+
+					break;
+				case "pull_request":
+
+					for(var Callback of Callbacks.pull) {
+
+						if(Callback.path.test(Request.ServerVariables.URL)) {
+
+							//TODO check secret .. decrypt hex digest and compare (after extension stuff is working)
+							var Secret = Callback.secret;
+
+							var PullRequest = Request.Form["pull_request"];
+
+							Callback.Fn({
+								"action" : Request.Form["action"],
+								"number" : PullRequest["number"],
+								"state" : PullRequest["state"],
+								"title" : PullRequest["title"],
+								"sha1": ("head" in PullRequest && PullRequest["head"]) ? PullRequest["head"]["sha"] : ""
+							});
+						}
+					}
+
+					break;
+
+				case "ping":
+
+					for(var Callback of Callbacks.pull) {
+
+						if(Callback.path.test(Request.ServerVariables.URL)) {
+
+							//TODO check secret .. decrypt hex digest and compare (after extension stuff is working)
+							var Secret = Callback.secret;
+
+							Callback.Fn({
+
+							});
+						}
+					}
+					break;
+
+				default:
+					throw "Webhook received - event not supported"
+
+			}
+		}
+	};
+
+	var Github = {
+		Hooks: {
+			push: function(PathRegex, Secret, Func) {
+				if(Func && Object.prototype.toString.call(Func) === '[object Function]') {
+					Callbacks["push"].push({path: PathRegex, secret: Secret, Fn: Func});
+				}
+
+			},
+			pull: function(PathRegex, Secret, Func) {
+				if(Func && Object.prototype.toString.call(Func) === '[object Function]')
+					Callbacks["pull"].push({ path: PathRegex, secret: Secret, Fn:Func});
+
+			},
+			process: function() {
+				ReceiveHooks();
+			}
+
+		},
+		Labels: {
+
+			Add: function(Issue, LabelSet) {
+
+				var IssueLabels;
+
+				if(LabelSet.constructor === Array) {
+					IssueLabels == LabelSet;
+				} else {
+					IssueLabels = [LabelSet];
+				}
+
+				var h = new HttpClient();
+				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/labels?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send(JSON.stringify(IssueLabels));
+
+				return h.ResponseText;
+
+
+			},
+			Remove: function(Issue, LabelSet) {
+				var IssueLabels;
+
+				if(LabelSet.constructor === Array) {
+					IssueLabels == LabelSet;
+				} else {
+					IssueLabels = [LabelSet];
+				}
+
+				var StatusTextList = [];
+				for(var i = 0; i < IssueLabels.length ; i++) {
+
+					var Label = IssueLabels[i];
+
+					var h = new HttpClient();
+					h.Open("DELETE", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/labels/" + Label + "?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+					h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+					h.SetRequestHeader("Content-Type", "application/json");
+					h.SetRequestHeader("User-Agent" , "CodistoConnect");
+					h.Send();
+
+					StatusTextList.push(h.ResponseText);
+				}
+				return StatusTextList;
+
+
+			},
+			ListAvailable: function() {
+				var h = new HttpClient();
+				h.Open("GET", "	https://api.github.com/repos/CodistoConnect/CodistoConnect/labels?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				return h.ResponseText;
+			},
+			ListIssue: function(Issue) {
+
+				var h = new HttpClient();
+				h.Open("GET","https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/labels?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				var IssueLabels = {};
+				for(var Label of h.ResponseObject) {
+					IssueLabels[Label.name] = true;
+				}
+
+				return IssueLabels
+
+			}
+
+		},
+		Releases : {
+			Create: function(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath) {
+
+				var h = new HttpClient();
+				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/releases?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+
+				h.Send(JSON.stringify({
+					"tag_name": TagName,
+					"target_commitish": TargetCommitSha,
+					"name": ReleaseName,
+					"body": TagDescription,
+					"draft": false,
+					"prerelease": false
+				}));
+
+				var ReleaseId = h.ResponseObject.id;
+
+				if(File.Exists(AssetPath)) {
+					var F = File.Open(AssetPath, "rb");
+
+					h.Open("POST", "https://uploads.github.com/repos/CodistoConnect/CodistoConnect/releases/" + ReleaseId + "/assets?name=plugin.tgz&access_token=" + Application.GITHUB_ACCESS_TOKEN);
+					h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+					h.SetRequestHeader("Content-Type", "application/x-gzip");
+					h.SetRequestHeader("User-Agent" , "CodistoConnect");
+					h.SetRequestHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+					h.SetRequestHeader("Pragma", "no-cache");
+					h.SetRequestHeader("Expires", 0);
+
+					//Send the raw binary content of the asset as the request body.
+					h.Send(F.Read());
+					F.Close();
+
+				}
+
+
+			}
+		},
+		PullRequests: {
+
+			Files: function(Issue) {
+
+				var h = new HttpClient();
+				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/files?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				var Files = {};
+				for(var File of h.ResponseObject) {
+
+					var Ref = File.contents_url.split("?")[1];
+					var CommitID = Ref.split("=")[1];
+;
+					Files[File.filename] = {
+						"sha"	: CommitID,
+						"status" : File.status
+					}
+				}
+
+				return Files;
+			},
+			Comment: function(Issue, SHA1, FileName, Line, Text) {
+
+				var h = new HttpClient();
+				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+
+				var Packet = {
+					"body": Text,
+					"commit_id" : SHA1,
+					"path": FileName,
+					"position": Line
+				};
+
+				h.Send(JSON.stringify(Packet));
+				return h.ResponseText;
+
+			}
+
+		}
+	};
+
+
+
+	return Github;
+
+})();
+

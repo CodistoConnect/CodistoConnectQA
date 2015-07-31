@@ -1,0 +1,143 @@
+var Github = Server.Import("/include/github.esp");
+
+var Secret = Application.GITHUBWEBHOOKSECRET;
+var SlackRoomToken = Application.SLACKROOMTOKEN;
+var Logger = Server.Import("/include/log.esp");
+
+var Lint = function(SHA1) {
+
+	var Status = 403;
+	var Errors = [];
+	var Warnings = [];
+
+	try {
+
+		var FCGIReq = new FastCGIClient();
+		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=5&stashpop=1&sha1=" + SHA1);
+		FCGIReq.Send();
+
+		if(FCGIReq.Status == 200) {
+
+			var ResponseBody = FCGIReq.ResponseBody.split("\n");
+
+			Status = FCGIReq.Status;
+			var FileNameToken = "FILE: ";
+			var FileName;
+
+			for(var i = 0 ; i < ResponseBody.length; i++) {
+
+				var Line = ResponseBody[i];
+
+				if(Line.indexOf(FileNameToken) == 0) {
+					FileName = Line.substr(FileNameToken.length, Line.length - FileNameToken.length);
+				}
+				var LineTokens = Line.split("|");
+				if(LineTokens.length == 3) {
+
+					var Type = LineTokens[1].trim();
+
+					switch(Type){
+						case "ERROR":
+							Errors.push({"filename" : FileName, "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
+							break;
+						case "WARNING":
+							Warnings.push({"filename" : FileName, "line" : parseInt(LineTokens[0], 10), "text": LineTokens[2]});
+							break;
+					}
+				}
+			}
+		}
+
+
+	} catch(e) {
+		Debug.LogInfo(e.toSource());
+	}
+
+	finally {
+
+		return {
+			"status" : Status,
+			"errors" : Errors,
+			"warnings" : Warnings,
+			"pluginpath" : ResponseBody[ResponseBody.length - 2] + "/"
+		};
+	}
+
+};
+
+Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
+
+		var PullRequestNumber = Hook.number;
+		var LintStatus = { status: 200};
+
+		switch (Hook.action) {
+			case "assigned" :
+				break;
+			case "unassigned" :
+				break;
+			case "labeled" :
+				break;
+			case "unlabeled" :
+				break;
+			case "synchronize":
+			//fall through - another push to the branch the pull request is tracking
+			case "opened" :
+
+				LintStatus = Lint(Hook.sha1);
+
+				if (LintStatus.status == 200) {
+
+					var Labels = Github.Labels.ListIssue(PullRequestNumber);
+
+					if (LintStatus.warnings.length > 0 || LintStatus.errors.length > 0) {
+
+						if(!("static analysis failed" in Labels))
+							Github.Labels.Add(PullRequestNumber, "static analysis failed");
+						if("static analysis passed" in Labels)
+							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
+
+
+						//Get list of files in this pull request
+						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+
+						LintStatus.errors.forEach(function(Error){
+
+							var FileName = Error.filename.replace(LintStatus.pluginpath, "");
+							if(FileName in FilesMap) {
+
+								var FileCommitSha = FilesMap[FileName].sha;
+
+								//Make sure the erroneous file is in the map above - you cannot leave comments on files that are not part of the changeset (git ignored etc)
+								Github.PullRequests.Comment(PullRequestNumber, FileCommitSha, FileName, Error.line, "BOT -> " + Error.text);
+							}
+
+						});
+
+						//TODO consider sending a slack notification with the full lint report if it failed
+
+					} else {
+
+						if(!"static analysis passed" in Labels)
+							Github.Labels.Add(PullRequestNumber, "static analysis passed");
+						if("static analysis failed" in Labels)
+							Github.Labels.Remove(PullRequestNumber, "static analysis failed");
+					}
+				}
+				break;
+			case "reopened":
+				break;
+
+		}
+
+		Response.Status = LintStatus.status;
+		Response.Write(Response.Status == 200 ? "OK" : "Error");
+
+});
+
+Github.Hooks.process();
+
+
+
+
+
+

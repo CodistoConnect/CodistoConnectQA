@@ -1,0 +1,83 @@
+Server.Require("/include/common.esp");
+Server.Require("/include/mimemap.esp");
+Server.Require("/include/template.esp");
+
+Request.URL = Request.ServerVariables.URL;
+
+var FilePath = decodeURIComponent(Request.URL.replace(/\?.*/, "").replace(/\/$/, "/index.html"));
+[, FileName] = FilePath.match(/\/([^\/]*)$/);
+if(!FileName)
+	FileName = "";
+
+if(/\./.test(FileName))
+	[, FileExtension] = FileName.match(/\.([^\.]*)$/);
+
+Request.IsAjax = /^XMLHttpRequest$/.test(Request.ServerVariables["HTTP_X_REQUESTED_WITH"]);
+
+if(/^html|htm$/i.test(FileExtension) || (/^\/(?:$|\?)/.test(Request.URL)))
+{
+	if(!/^on$/i.test(Request.ServerVariables.HTTPS))
+	{
+		Response.Redirect("https://");
+	}
+
+	try{
+
+		var T = new TemplateEngine();
+		T.Input =  FilePath;
+		T.RootDirectory = "/";
+		T.QueryString = Request.QueryString;
+		T.AddProperty("page", FileName.replace(FileExtension, "").replace(".", ""));
+		T.AddMacro("/base.macro");
+		T.Execute();
+
+	} catch(e) {
+
+		Response.Write(e.toSource());
+		Response.End();
+
+	}
+	Response.End();
+}
+
+
+// Merchant Static Content
+if(FileExtension && !/^ezi|html$/.test(FileExtension))
+{
+	var FinalPath;
+
+	if(File.IsFile("/" + FilePath))
+	{
+		FinalPath = "/" + FilePath;
+	}
+
+	if(FinalPath)
+	{
+		Response.Expires = 315360000;
+		Response.Headers["Cache-Control"] = "public, max-age=315360000";
+
+		if(/^jpeg$|^jpg$|^gif$|^png$|^bmp$/i.test(FileExtension))
+		{
+			var Stat = File.Stat(FinalPath);
+
+			Response.SendImage(FinalPath, Request.QueryString, Stat.Id + Stat.ModifiedTime.valueOf() + Stat.Size, MimeTypeForExtension(FileExtension));
+		}
+		else //if(/^css|^js$/i.test(FileExtension)
+		{
+			Response.Compress = true;
+			Response.ContentType = MimeTypeForExtension(FileExtension);
+			Response.SendFile(FinalPath);
+		}
+
+		Response.End();
+	}
+}
+
+
+Response.Status = "404 Resource Not Found";
+
+var T = new TemplateEngine();
+T.Input = "404.html";
+T.AddMacro("./base.macro");
+T.Execute();
+Response.End();

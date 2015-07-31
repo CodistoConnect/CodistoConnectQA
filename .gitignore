@@ -1,0 +1,4 @@
+*.db
+*.tgz
+tasks/plugin/src
+

@@ -1,0 +1,327 @@
+var PrettyDate = function(Dte) {
+	var Month = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Nov",
+		"Dec"
+	][Dte.getMonth()];
+
+	return [Dte.getDate(), Month, Dte.getFullYear().toString().substring(2,4)].join(".");
+};
+
+
+function FindProperty(Object, PropertyName)
+{
+	if(PropertyName instanceof Array)
+	{
+		for(var Key in Object)
+		{
+			for each(PropName in PropertyName)
+			{
+				if(Key.toUpperCase() == PropName.toUpperCase())
+					return Object[Key];
+			}
+		}
+	}
+	else if(typeof(Object) == "object")
+	{
+		if(PropertyName in Object)
+			return Object[PropertyName];
+
+		PropertyName = PropertyName.toLowerCase();
+		if(PropertyName in Object)
+			return Object[PropertyName];
+
+		PropertyName = PropertyName.toUpperCase();
+		if(PropertyName in Object)
+			return Object[PropertyName];
+
+		for(var Key in Object)
+		{
+			if(Key.toUpperCase() == PropertyName)
+				return Object[Key];
+		}
+	}
+
+	return null;
+}
+
+function FormData(o)
+{
+	if(typeof(o) == "object")
+	{
+		var s = "";
+
+		for(var x in o)
+		{
+			s += encodeURIComponent(x);
+
+			if(o[x] != null && o[x] != undefined)
+				s += "=" + encodeURIComponent(o[x]);
+
+			s += "&";
+		}
+
+		return s.replace(/&$/, "");
+	}
+	else if(typeof(o) == "string")
+	{
+		var result = new Object();
+		var keyvalues = o.split("&");
+
+		for(var idx = 0; idx < keyvalues.length; idx++)
+		{
+			var keyvalue = keyvalues[idx].split("=");
+
+			if(keyvalue.length == 1)
+			{
+				result[decodeURIComponent(keyvalue[0])] = null;
+			}
+			else if(keyvalue.length == 2)
+			{
+				try
+				{
+					result[decodeURIComponent(keyvalue[0])] = decodeURIComponent(keyvalue[1].replace(/\+/g, "%20"));
+				}
+				catch(e)
+				{
+with(new MailMessage())
+{
+	To = "debug@ontech.com.au";
+	From = "debug@ontech.com.au";
+	Subject = "NWO Form Data??";
+	TextBody = keyvalues.toSource() + "\n\n" + e.toSource() + "\n\n" + keyvalue[0] + ": " + keyvalue[1];
+	Send();
+}
+					throw e;
+				}
+			}			
+		}
+
+		return result;
+	}
+
+	throw "Invalid Argument to FormData";
+}
+Response.SendImage = function(Strm, Properties, ETag, MimeType)
+{
+	var ImgStrm;
+	var Width;
+	var Height;
+	var NoStretch;
+	
+	if(MimeType)
+	{
+		if(!/^image\//.test(MimeType))
+			MimeType = "image/" + MimeType.toLowerCase();
+
+		Response.ContentType = MimeType;
+	}
+	else if("ContentType" in Properties)
+	{
+		Response.ContentType = Properties.ContentType;
+		
+		MimeType = Properties.ContentType;
+	}
+	else
+	{
+		if(typeof(Strm) == "function")
+			ImgStrm = new Image(Strm());
+		else	
+			ImgStrm = new Image(Strm);
+	
+		Response.ContentType = "image/" + ImgStrm.Format.toLowerCase();
+		
+		MimeType = "image/" + ImgStrm.Format.toLowerCase();
+	}
+	
+    if("width" in Properties || "height" in Properties)
+    {    
+        if("width" in Properties)
+        {
+            Width = parseInt(Properties.width, 10);            
+            if(Width <= 0)
+				Width = 1;
+		}
+        
+        if("height" in Properties)
+        {
+            Height = parseInt(Properties.height, 10);
+            if(Height <= 0)
+				Height = 1;
+		}       
+    }
+    
+    NoStretch = "nostretch" in Properties;
+    
+    
+    if(ETag)
+    {          
+		ETag = Base64.Encode(ETag + Width + Height + NoStretch);
+	    
+		Response.Headers["Etag"] = "\"" + ETag + "\"";			    
+	    
+		if("HTTP_IF_NONE_MATCH" in Request.ServerVariables &&
+			Request.ServerVariables["HTTP_IF_NONE_MATCH"].replace(/^\s*"?|"?\s*$/g,"") == ETag)
+		{
+			Response.Status = "304 Not Modified";
+			return;
+		}	
+	}          
+
+    if(Width || Height)
+    {
+		if(!ImgStrm)
+		{
+			if(typeof(Strm) == "function")
+				ImgStrm = new Image(Strm());
+			else	
+				ImgStrm = new Image(Strm);
+		}
+		        
+        if(Width && ("nostretch" in Properties) && Width > ImgStrm.Width)
+			Width = ImgStrm.Width;
+
+        if(Height && ("nostretch" in Properties) && Height > ImgStrm.Height)
+			Height = ImgStrm.Height;
+        
+        if(!Height)
+        {
+			Height = Math.ceil(ImgStrm.Height / ImgStrm.Width * Width);
+			if(Height <= 0)
+				Height = 1;
+        }
+
+        if(!Width)
+        {
+			Width = Math.ceil(ImgStrm.Width / ImgStrm.Height * Height);
+            if(Width <= 0)
+				Width = 1;
+        }
+                    
+		if(ImgStrm.Type == Image.ColorSeparationType)
+			ImgStrm.Type = Image.TrueColorType;								
+        
+        ImgStrm.Fit(Width, Height);
+    }       
+    
+    if(ImgStrm)
+    {
+		Response.ContentLength = ImgStrm.Length;
+		Response.BinaryWrite(ImgStrm);
+    }
+    else
+    {   
+		if(typeof(Strm) == "string")
+		{
+			Response.SendFile(Strm);
+		}
+		else
+		{   
+			if(typeof(Strm) == "function")
+				Strm = Strm();
+
+			Response.ContentLength = Strm.Length;
+			Response.BinaryWrite(Strm);
+		}
+	}
+};
+
+
+Application.ExceptionHandler = function(Exception)
+{
+	Response.Failure = function(Exception)
+	{
+		Response.Status = "500 Internal Server Error";
+		Response.Write("<!DOCTYPE html><html><head><title>Exception Occurred</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8;\"/></head><body><!-- " + (Exception ? Exception.toSource() : "") + " --><h1>We are currently having difficulties</h1><p>Try again later</p></body></html>");
+		Response.End();
+	};
+
+	Response.NotFound = function(status)
+	{
+		Response.Status = "404 " + (status ? status : "Resource Not Found");
+		Response.Write("<!DOCTYPE html><html><head><title>Page Not Found</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8;\"/></head><body><h1>Page Not Found</h1><p>The url " + Request.URL.replace(/</g, "&lt;") + " is not available on this website.</p></body></html>");
+		Response.End();
+	};
+
+	Response.Failure(Exception);
+	Response.End();
+};
+
+Request.IsSecure = function() {
+
+	if("HTTPS" in Request.ServerVariables &&
+		(/^on$/i.test(Request.ServerVariables.HTTPS) ||
+			/^apache/i.test(Request.ServerVariables.SERVER_SOFTWARE)
+		))
+		return true;
+
+	return false;
+}
+
+Response.Redirect = function(url, status)
+{
+	if(!url)
+	{
+		if(Request.IsSecure())
+			url = "https://";
+		else
+			url = "http://";
+	}
+	
+	if(/^[a-z0-9]+:\/\/$/i.test(url))
+		url = url + Request.ServerVariables.HTTP_HOST + Request.URL;
+	else if(/^\//i.test(url))
+	    url = (Request.IsSecure() ? "https://" : "http://") + Request.ServerVariables.HTTP_HOST + url;
+    else if(!url)
+        url = Request.ServerVariables.HTTP_HOST + Request.URL;
+
+	Response.Status = (status == undefined || status == null || /^\s$/i.test(status)) ? "303 See Other" : status;
+	Response.Headers.Location = url;
+	Response.End();	
+}
+
+
+function CheckURL(url)
+{
+	if(!/:\/\//.test(url))
+		url = "http://" + url;
+
+	if(/^http[s]?:\/\/[a-zA-Z0-9\.-]+\//.test(url))
+	{
+		try
+		{
+			var h = new HttpClient();
+			h.Open("GET", url);
+			h.Send();
+
+			var HTML = h.ResponseText.replace(/ /g,'').replace(/(\r\n|\n|\r)/gm,"");
+
+			var BodyID = HTML.indexOf('<bodyid="page-login"onload="document.forms.loginForm.username.focus();">') != -1;
+			var ContainsScriptblock = HTML.indexOf('<scripttype="text/javascript">varloginForm=newvarienForm(\'loginForm\');</script>') != -1;
+			var ContainsUser = HTML.indexOf('<inputtype="text"id="username"name="login[username]"value=""class="required-entryinput-text') !=-1;
+			var ContainsPassword = HTML.indexOf('<inputtype="password"id="login"name="login[password]"class="required-entryinput-text"value=""/>') != -1;
+
+			var isAdminURL = BodyID && ContainsScriptblock && ContainsUser && ContainsPassword;
+			if(!isAdminURL)
+				return 500;
+			else
+				return h.Status;
+		}
+		catch(e)
+		{
+			return 500;
+		}
+	}
+	else
+	{
+		return 404;
+	}
+}

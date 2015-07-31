@@ -1,0 +1,221 @@
+var Github = Server.Import("/include/github.esp");
+
+var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
+var Secret = Application.GITHUBWEBHOOKSECRET;
+var SlackRoomToken = Application.SLACKROOMTOKEN;
+var Logger = Server.Import("/include/log.esp");
+
+var ServeFile = function(FilePath) {
+
+	if(File.IsFile(FilePath)) {
+
+		Debug.LogInfo("Serving");
+		Response.Status = 200;
+		Response.ContentType = "application/x-gzip";
+		Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+		Response.Pragma = "no-cache";
+		Response.Expires = 0;
+
+		var FileComponents = FilePath.split("/");
+		Response.Headers["Content-disposition"] =  "attachment;filename=" + FileComponents[FileComponents.length -1];
+
+		Response.SendFile(FilePath);
+	} else {
+
+		Response.Status = 404;
+		Response.Write();
+	}
+	Response.End();
+};
+
+var BuildPlugin = function(Branch, SHA1, ResellerKey) {
+
+	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
+	var Status = 403;
+	var PluginVersion;
+	var PluginPath;
+
+	try {
+
+		var FCGIReq = new FastCGIClient();
+
+		SHA1 = SHA1 || 'n/a';
+		ResellerKey = ResellerKey || 'n/a';
+
+		var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken;
+		Debug.LogInfo("Sending Request " + FCGIURL);
+
+		//make all arguments mandatory so it is serial on the other side
+		FCGIReq.Open("POST", FCGIURL);
+		FCGIReq.Send();
+
+		var ResponseBody = FCGIReq.ResponseBody.split("\n");
+
+		//Plugin details is the last thing written to STDOUT in the sub process (before the EOL that echo writes)
+		Status = FCGIReq.Status;
+		var PluginDetails = ResponseBody[ResponseBody.length - 2].split("~~");
+
+		Debug.LogInfo("PluginDetails are " + JSON.stringify(PluginDetails));
+
+		PluginVersion = PluginDetails[0];
+		PluginPath = PluginDetails[1];
+
+
+	} catch(e) {
+			Debug.LogInfo(e.toSource());
+	}
+
+	return {
+		Status: Status ,
+		PluginVersion: PluginVersion,
+		PluginPath: PluginPath
+	};
+
+};
+
+//A couple of aliases
+if(Request.ServerVariables.URL == "/plugin/getstable") {
+	Response.Headers.Location = "/plugin/CodistoConnect.tgz";
+}
+
+else if(Request.ServerVariables.URL == "/plugin/getbeta") {
+	Response.Headers.Location = "/plugin/CodistoConnect-beta.tgz";
+}
+else {
+
+	var FilePath = decodeURIComponent(Request.ServerVariables.URL.replace(/\?.*/, "").replace(/\/$/, "/index.html"));
+
+	if(FilePath == "/plugin/CodistoConnect-beta.tgz") {
+		ServeFile("/tasks/plugin/CodistoConnect-beta.tgz");
+	}
+
+	else if(FilePath == "/plugin/CodistoConnect.tgz") {
+		ServeFile("/tasks/plugin/CodistoConnect.tgz");
+	}
+}
+
+if(/^\/plugin\/install/.test(Request.ServerVariables.URL)) {
+	ServeFile("/tasks/plugin/install.sh");
+}
+
+if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
+
+	//TODO implement either update matrix literals here or DB calls
+	throw "Not Implemented";
+
+
+}
+
+if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
+
+	if ("HTTP_X_CODISTO_BUILD" in Request.ServerVariables && Request.ServerVariables.HTTP_X_CODISTO_BUILD) {
+
+
+		var Branch = Request.QueryString.branch;
+		var SHA1 = Request.QueryString.sha1;
+		var ResellerKey = Request.QueryString.resellerkey;
+
+		if (Branch || SHA1) {
+
+			var BuildResult = BuildPlugin(Branch, SHA1, ResellerKey);
+
+			Response.Status = BuildResult.Status;
+
+			Logger.Log("PLUGIN", "Building complete - Status " + JSON.stringify(BuildResult), "Complete");
+
+			if (Response.Status == 200 && "download" in Request.QueryString && Request.QueryString.download) {
+
+				Logger.Log("PLUGIN", "Download requested ", "Serving");
+				ServeFile("/tasks/plugin/" + BuildResult.PluginPath);
+			}
+
+			Response.Write(Response.Status == 200 ? "OK" : "Error");
+
+		} else {
+
+			Response.Status = 403;
+		}
+	} else {
+
+		Response.Status = 403;
+	}
+}
+
+//subscribe to various github webhooks
+Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
+
+	if(Hook.branch == "development" || Hook.branch == "master") {
+
+		//When we update the data-install etc and add second commit and push another web hook receive will happen.. don't build if we know that is the case
+		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog") {
+
+			var BuildStatus = BuildPlugin(Hook.branch, Hook.sha1);
+
+			if(BuildStatus.Status == 200) {
+
+				if(Hook.branch == "master") {
+
+					var TagName = BuildStatus.PluginVersion;
+					var TargetCommitSha = Hook.sha1;
+					var ReleaseName = "v" + BuildStatus.PluginVersion;
+
+					var TagDescription = ["![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)",
+						"","# Release " + BuildStatus.PluginVersion,"",
+						"## [Changelog] (https://github.com/CodistoConnect/CodistoConnect/blob/" + BuildStatus.PluginVersion + "/CHANGELOG.md)"].join("\n");
+
+					var PreRelease = false;
+					var AssetPath = "/tasks/plugin/CodistoConnect.tgz";
+
+					Logger.Log("GITHUB", ["Creating Release ", "TagName(", TagName, ") SHA1(" , TargetCommitSha, ")",
+						" Release Name ", ReleaseName, " TagDescription(" ,TagDescription, ")"].join(""), "Release");
+
+					//Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
+
+					//Send notification to Slack room to inform developers a new build has been releases
+					Logger.Log("GITHUB", "Notifying developers release is ready", "Notifying in Slack");
+
+
+					var SlackMessage =	{
+						"room_token" : SlackRoomToken,
+						"request" :
+						{
+							"username": "CodistoConnect",
+							"attachments":
+								[
+									{
+										"fallback": "New Github release created - " + ReleaseName,
+										"pretext": "New Github release deployed successfully",
+										"color":"#62CF6F",
+										"fields":
+											[
+												{
+													"title":"New Github release created - " + ReleaseName,
+													"value": "https://github.com/CodistoConnect/CodistoConnect/releases/latest",
+													"short":false
+												}
+											]
+									}
+								]
+						}
+					};
+
+					Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
+
+				}
+
+			}
+
+			Response.Status = BuildStatus.Status;
+			Response.Write(Response.Status == 200 ? "OK": "Error");
+		}
+
+		Response.End();
+
+
+	} else {
+		Response.Status = 403;
+		Debug.LogInfo("A branch was pushed - however it was not master/development\n Details are " + JSON.stringify(Hook));
+	}
+});
+
+Github.Hooks.process();

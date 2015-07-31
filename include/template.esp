@@ -1,0 +1,130 @@
+var Template = {
+
+	Run : function(Context) {
+
+		var Db;
+		var T = new TemplateEngine();
+		
+		if("QueryString" in Context)
+			T.QueryString = Context.QueryString;
+		
+		if("DataSource" in Context)
+		{
+			T.DataSource = Context.DataSource;
+			Db = Context.DataSource;
+			
+			if(typeof(Db) == "string")
+				Db = new DbConnection(Db);	
+		}
+		
+		T.RootDirectory = "./";
+		T.Input = Context.Input;
+
+		if("Properties" in Context)
+		{
+			for(var p in Context.Properties)
+				T.AddProperty(p, Context.Properties[p]);
+		}
+		
+		if(("Session" in Context) && Context.Session)
+		{
+			T.AddProperty("CustomerID", Session);
+			T.AddProperty("LoggedIn", Session);
+		}
+
+		if("Datasets" in Context)
+		{
+			for(var Dataset in Context.Datasets)
+				T.AddDataset(Dataset, Context.Datasets[Dataset]);
+		}
+		
+		T.Execute();
+	
+	},
+	
+	Standard : function(Db) {
+	
+		if(!("std" in this))
+			this.std = !/^migration$/i.test(Db.ExecuteScalar("SELECT Template FROM MerchantDesign"));
+			
+		return this.std;	
+	
+	},
+	
+	Macros : function(Db, Options) {
+	
+		var Macros = [];
+
+		for each(var Path in this.Dirs())
+		{
+			if(File.IsDirectory(Path + "/include/"))
+			{	
+				Dir.Listing(Path + "/include/").forEach(function(Macro) {
+
+					if(/\.ezimac$/.test(Macro.Name)
+						&& !/^base.ezimac$/.test(Macro.Name)
+						&& (!Options || !("ExcludeMacros" in Options) || Options.ExcludeMacros.filter(function(f) { return f == Macro.Name}).length == 0))
+					{			
+						Macros.push("/include/" + Macro.Name);
+					}
+				
+				});
+			}
+		}
+			
+		if(this.Standard(Db))
+			Macros.push("/include/base.ezimac");
+		else
+			Macros.push("/legacy.ezimac");
+
+		return Macros;	
+	
+	},
+	
+	Dirs : function(Db) {
+	
+		if(!("dirs" in this))
+		{
+			this.dirs = [".ezimerchant/template"];
+			
+			if(!Db.ExecuteScalar("SELECT Template FROM MerchantDesign WHERE Template = 'migration'"))
+			{
+                            if(!("showdesktop" in Request.Cookies)){
+                                if(/Googlebot-Mobile|iPad|iPhone|iPod|Android|\s+Mobile(?:\/\S*)?\s+/i.test(Request.ServerVariables.HTTP_USER_AGENT)|| 
+                                        (("template" in Request.QueryString) && /^phone$/i.test(Request.QueryString.template)))
+                                {
+                                        this.dirs.unshift(".ezimerchant/phone/");
+                                }
+
+                                if(/iPad/i.test(Request.ServerVariables.HTTP_USER_AGENT) ||
+                                        (/Android/i.test(Request.ServerVariables.HTTP_USER_AGENT) && !/\s+Mobile(?:\/\S*)?\s+/i.test(Request.ServerVariables.HTTP_USER_AGENT)))
+                                {
+                                                        this.dirs.unshift(".ezimerchant/tablet/");
+                                }
+                            }
+			}
+		}
+			
+		return this.dirs;	
+	
+	},
+	
+	File : function(Db) {
+	
+		for(var i = 1; i < arguments.length; i++)
+		{
+			if(arguments[i])
+			{	
+				for each(var Dir in this.Dirs(Db))
+				{	
+					if(File.IsFile(Dir + arguments[i]))
+						return arguments[i];	
+				}
+			}
+		}
+			
+		return null;	
+	
+	}
+
+};

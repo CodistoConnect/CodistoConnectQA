@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset name="Codisto">
+ <description>PHPCompatability standard with CodistoConnect modifications</description>
+
+ <!-- Include the whole PHPCompatability standard -->
+ <rule ref="PHPCompatibility"/>
+
+
+ <!-- Exclusions or additional rule refs can go below -->
+
+</ruleset>
+

@@ -1,0 +1,132 @@
+(function(){
+
+	var LoggerConfig = {};
+
+	LoggerConfig.SYSLOG = "SYSLOG" in Request.ServerVariables && Request.ServerVariables["SYSLOG"] ?
+	 !(/^false$|^0$|^off$/i.test(Request.ServerVariables["SYSLOG"])) : true;
+
+	LoggerConfig.SQLLITE = "SQLLITE" in Request.ServerVariables && Request.ServerVariables["SQLLITE"] ?
+		!(/^false$|^0$|^off$/i.test(Request.ServerVariables["SQLLITE"])) : true;
+
+
+	LoggerConfig.RESPONSE = "RESPONSE" in Request.ServerVariables && Request.ServerVariables["RESPONSE"] ?
+		!(/^false$|^0$|^off$/i.test(Request.ServerVariables["RESPONSE"])) : false;
+
+	var Db;
+	var Logger = {};
+
+	try {
+		Db = new DbConnection("sqlite:/qa.db");
+
+
+		//Instead of versioning and using pragma USER_VERSION to check to make sure schema is applied use a collection of Schema modifications with a hash of the query
+		var HashSet = {};
+
+		var SchemaModsExists = Db.ExecuteScalar("SELECT name from sqlite_master WHERE type='table' AND name = 'SchemaMods'");
+
+		if(!SchemaModsExists) {
+
+			Db.Execute("CREATE TABLE SchemaMods(Hash TEXT NOT NULL PRIMARY KEY, Schema TEXT NOT NULL, ApplyDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+
+		} else {
+
+			Db.ExecuteCallback("SELECT Hash FROM SchemaMods", function (Row) {
+				HashSet[Row.Hash] = true;
+			});
+		}
+
+		//Before we return access to the DB make sure all schema is applied
+		var SchemaMods = [
+			{
+				"Hash": "8W+foLMlducpBYUrDQTaviT1OIpOV11mao1ukrUiuVU=",
+				"Schema": "CREATE TABLE Log\n\
+				(\n\
+					Action TEXT NOT NULL,\n\
+				Description TEXT NOT NULL,\n\
+				Status TEXT NOT NULL,\n\
+				LogDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+			}
+		];
+
+		//Generate hashes once schema has been locked down by the developer
+		if("CALCULATEHASH" in Request.ServerVariables && Request.ServerVariables["CALCULATEHASH"]) {
+
+			SchemaMods.forEach(function(SchemaMod) {
+				if("Hash" in SchemaMod && !SchemaMod.Hash) {
+
+					var Salt = SchemaMod.Schema.split("/n")[0];
+					var CalculatedHash = Base64.Encode(Crypto.Hash(Crypto.SHA256, Salt + SchemaMod.Schema));
+
+					if(LoggerConfig.SYSLOG)
+						Debug.LogInfo("\nCalculated hash is " + CalculatedHash + " for " + SchemaMod.Schema);
+
+					if(LoggerConfig.RESPONSE)
+						Response.Write("\nCalculated hash is " + CalculatedHash + " for " + SchemaMod.Schema);
+
+				}
+			})
+
+
+
+		} else {
+			SchemaMods.map(function(SchemaMod){
+
+				try {
+
+					if(("Hash" in SchemaMod && SchemaMod.Hash) && ("Schema" in SchemaMod && SchemaMod.Schema)) {
+
+						//hash the current Schema and make sure calculated hash is correct to confirm nobody has tampered with the schema or hash
+						var Salt = SchemaMod.Schema.split("/n")[0];
+						var CalculatedHash = Base64.Encode(Crypto.Hash(Crypto.SHA256, Salt + SchemaMod.Schema));
+						if(CalculatedHash == SchemaMod.Hash) {
+
+							//Apply schema modification if it has not been applied
+							if(!(SchemaMod.Hash in HashSet)) {
+
+								Db.Execute(SchemaMod.Schema);
+								Db.Execute("INSERT INTO SchemaMods(Hash, Schema) VALUES(?, ?)", SchemaMod.Hash, SchemaMod.Schema)
+							}
+						} else {
+
+							Debug.LogWarn("Schema update failed for " + SchemaMod.Schema + " Hash was invalid\n");
+						}
+
+					}
+
+
+				} catch(e) {
+					//syntax is incorrect or other error
+					Debug.LogCrit(e.toSource());
+				}
+
+			});
+
+			Logger = {
+				Log : function(Action, Description, Status){
+
+					if(LoggerConfig.SQLLITE) {
+						Db.Execute("INSERT INTO LOG(Action, Description, Status) VALUES (?, ?, ?)", Action, Description, Status);
+					}
+
+					if(LoggerConfig.SYSLOG) {
+						Debug.LogInfo(["ACTION: ", Action, " DESCRIPTION: ", Description, " Status: ", Status].join(""));
+					}
+
+					if(LoggerConfig.RESPONSE) {
+						Response.Write(["ACTION: ", Action, " DESCRIPTION: ", Description, " Status: ", Status].join(""));
+					}
+				}
+			}
+		}
+
+
+
+	} catch(e) {
+		Debug.LogCrit(e.toSource());
+	} finally {
+		return Logger;
+	}
+
+
+})();
+
