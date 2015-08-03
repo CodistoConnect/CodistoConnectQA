@@ -169,7 +169,7 @@ Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 					Logger.Log("GITHUB", ["Creating Release ", "TagName(", TagName, ") SHA1(" , TargetCommitSha, ")",
 						" Release Name ", ReleaseName, " TagDescription(" ,TagDescription, ")"].join(""), "Release");
 
-					//Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
+					Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
 
 					//Send notification to Slack room to inform developers a new build has been releases
 					Logger.Log("GITHUB", "Notifying developers release is ready", "Notifying in Slack");

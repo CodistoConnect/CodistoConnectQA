@@ -1,4 +1,3 @@
-//TODO This should become open source -- I think we should be transparent in our QA attempts to foster good will
 //TODO complete the secret hash checking stuff
 (function(){
 
