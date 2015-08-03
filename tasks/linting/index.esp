@@ -91,12 +91,6 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 					if (LintStatus.warnings.length > 0 || LintStatus.errors.length > 0) {
 
-						if(!("static analysis failed" in Labels))
-							Github.Labels.Add(PullRequestNumber, "static analysis failed");
-						if("static analysis passed" in Labels)
-							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
-
-
 						//Get list of files in this pull request
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
 
@@ -106,6 +100,16 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 							if(FileName in FilesMap) {
 
 								var FileCommitSha = FilesMap[FileName].sha;
+
+								if(!("static analysis failed" in Labels)) {
+
+									Github.Labels.Add(PullRequestNumber, "static analysis failed");
+									Github.Labels.Remove(PullRequestNumber, "static analysis passed");
+									
+									Labels["static analysis failed"] = true;
+								}
+
+
 
 								//Make sure the erroneous file is in the map above - you cannot leave comments on files that are not part of the changeset (git ignored etc)
 								Github.PullRequests.Comment(PullRequestNumber, FileCommitSha, FileName, Error.line, "BOT -> " + Error.text);
