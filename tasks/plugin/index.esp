@@ -112,6 +112,11 @@ if(/^\/plugin\/install/.test(Request.ServerVariables.URL)) {
 				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?branch="
 				+ Request.QueryString["branch"] + "&download=1\"; ");
 
+			} else if("sha1" in Request.QueryString && Request.QueryString["sha1"]){
+
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?sha1="
+				+ Request.QueryString["sha1"] + "&download=1\"; ");
+
 			} else {
 				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz https://qa.codisto.com/plugin/getstable");
 			}
