@@ -92,14 +92,6 @@ function FormData(o)
 				}
 				catch(e)
 				{
-with(new MailMessage())
-{
-	To = "debug@ontech.com.au";
-	From = "debug@ontech.com.au";
-	Subject = "NWO Form Data??";
-	TextBody = keyvalues.toSource() + "\n\n" + e.toSource() + "\n\n" + keyvalue[0] + ": " + keyvalue[1];
-	Send();
-}
 					throw e;
 				}
 			}			
