@@ -95,7 +95,36 @@ else {
 }
 
 if(/^\/plugin\/install/.test(Request.ServerVariables.URL)) {
-	ServeFile("/tasks/plugin/install.sh");
+
+
+	var PluginToken = "{PLUGIN_FETCH}";
+	var F = File.Open("/tasks/plugin/install.sh");
+	var InstallScript = F.Read().split("\\n"); //its not splitting by just new lines /dev/null is captured too
+
+	for(var i = 0; i < InstallScript.length; i++) {
+
+		var InstallLine = InstallScript[i];
+
+		if(InstallLine.indexOf(PluginToken) > 0){
+
+			if("branch" in Request.QueryString && Request.QueryString["branch"]) {
+
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?branch="
+				+ Request.QueryString["branch"] + "&download=1\"; ");
+
+			} else {
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz https://qa.codisto.com/plugin/getstable");
+			}
+		}
+	}
+
+	Response.Status = 200;
+	Response.ContentType = "text/plain";
+	Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+	Response.Pragma = "no-cache";
+	Response.Expires = 0;
+	Response.Write(InstallScript);
+
 }
 
 if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
