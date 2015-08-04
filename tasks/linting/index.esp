@@ -4,6 +4,9 @@ var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
+var MIN_PHP="5";
+
+
 var Lint = function(SHA1) {
 
 	var Status = 403;
@@ -14,7 +17,7 @@ var Lint = function(SHA1) {
 	try {
 
 		var FCGIReq = new FastCGIClient();
-		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=5&stashpop=1&sha1=" + SHA1);
+		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=" + MIN_PHP + "&stashpop=1&sha1=" + SHA1);
 		FCGIReq.Send();
 
 
@@ -132,24 +135,35 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						 */
 
 
+						Report.push("<h4>Configuration</h4>");
+						Report.push("- [x] PHP Minimimum version " + MIN_PHP);
+						Report.push("<br>");
+
 						var AppendReport = function(Class, Collection) {
 
 							Report.push("<h4>" + Class.toUpperCase() + "</h4>");
 
-							Report.push("| File | Line  | Error |");
-							Report.push("| -----| ------| ------|");
+
+
+
+							var CurrentFileName = "";
 
 							Collection.forEach(function(LogRow) {
 
 								var FileName = LogRow.filename;
 
-								//
+								if(FileName != CurrentFileName) {
+
+									Report.push("<br>");
+									Report.push("<h5>" + FileName + "</h5>");
+									Report.push("|Line  | Error |");
+									Report.push("|------| ------|");
+								}
+
 								if (FileName in FilesMap) {
 
 
-
-
-									Report.push("|" + [LogRow.filename, LogRow.line, LogRow.text].join("|") + "|");
+									Report.push("|" + [LogRow.line, LogRow.text].join("|") + "|");
 
 									//grab out the most recent filesha so that we can provide direct line links
 
