@@ -103,6 +103,9 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 					if (LintResults.warnings.length > 0 || LintResults.errors.length > 0) {
 
+						var ChangeSetWarnings = 0;
+
+
 						//Get list of files in this pull request - the linter may find erroneous files not part of this changeset. Discard
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
 
@@ -111,6 +114,24 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						Report.push("- [x] PHP Minimimum version (" + MIN_PHP + ") compatibility check");
 						Report.push("<br>");
 						Report.push("");
+
+
+						var CheckinChangeset = function(Set) {
+
+							for(let i = 0; i < Set.length; i++) {
+
+								var LogRow = Set[i];
+								var FileName = LogRow.filename;
+
+								//There is at least one applicable file
+								if (FileName in FilesMap)
+									return 1;
+
+							}
+
+							return 0;
+
+						};
 
 						var AppendReport = function(Class, Collection) {
 
@@ -146,15 +167,27 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 							Report.push("<br>");
 						};
 
-						if(LintResults.errors.length > 0) {
+						var ChangeSetErrors = LintResults.errors.length > 0 && CheckinChangeset(LintResults.errors);
+						var ChangeSetWarnings = LintResults.warnings.length > 0 && CheckinChangeset(LintResults.warnings);
+
+
+						if(ChangeSetErrors) {
+
 							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Errors', LintResults.errors);
+
+						}
+						if(ChangeSetWarnings) {
+
+							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Warnings', LintResults.warnings);
+
 						}
 
-						if(LintResults.warnings.length > 0) {
-							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Warnings', LintResults.warnings);
-						}
+						StaticAnalyisisPass = ChangeSetErrors = 0 && ChangeSetWarnings == 0;
+
 
 					} else {
+
+						//No errors or warnings at all. Lovely
 						StaticAnalyisisPass = true;
 
 					}
