@@ -118,23 +118,26 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 								var FileName = LogRow.filename;
 
-								if(FileName != CurrentFileName) {
-
-									Report.push("<br>");
-									Report.push("");
-									Report.push("<h5>" + FileName + "</h5>");
-									Report.push("|Line  | Error |");
-									Report.push("|------| ------|");
-											
-									CurrentFileName = FileName;
-								}
-
 								if (FileName in FilesMap) {
 
 									var BlobURL = FilesMap[FileName].blob_url;
+
+									if(FileName != CurrentFileName) {
+
+										Report.push("<br>");
+										Report.push("");
+										Report.push('<h5><a href="' + BlobURL + '"' + FileName + '</h5>');
+										Report.push("|Line  | Error |");
+										Report.push("|------| ------|");
+
+										CurrentFileName = FileName;
+									}
+
+
+
 									var LineRef = BlobURL + "#L" + LogRow.line;
 
-									Report.push("|<a href=" + LineRef + ">" + LogRow.line + "</a>|" + LogRow.text + "|");
+									Report.push('|<a href="' + LineRef +'">' + LogRow.line + '</a>|' + LogRow.text + '|');
 
 								}
 
@@ -171,14 +174,13 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						Report.push("- [x] Errors were triggered");
 
 					var Comments = Github.PullRequests.Comments(PullRequestNumber);
-					Debug.LogInfo("Comments are " + JSON.stringify(Comments));
 					Comments.map(function(Comment){
 
-						Debug.LogInfo("Comment is " + JSON.stringify(Comment));
 						//Delete any comments left previously by the codistobot
 						if(Comment.commenter_login == "codistobot") {
+
 							Github.PullRequests.DeleteComment(Comment.id);
-							Debug.LogInfo("Deleting bot comment");
+
 						}
 					});
 
