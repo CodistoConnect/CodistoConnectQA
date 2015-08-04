@@ -205,7 +205,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					}
 
 					//Leave final review comment
-					//Github.PullRequests.Comment(PullRequestNumber, Report.join("\n");
+					Github.PullRequests.Comment(PullRequestNumber, Report.join("\n"));
 
 
 				}
