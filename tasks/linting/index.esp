@@ -201,12 +201,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 				}
 
-				for(var i = 0 ; i < Report.length; i++) {
-					F.Write(Report[i] + "\n");
-				}
-
-				F.Close();
-
 				break;
 
 			case "reopened":
