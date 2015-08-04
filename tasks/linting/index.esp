@@ -170,8 +170,17 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					if(LintResults.errors.length > 0)
 						Report.push("- [x] Errors were triggered");
 
-					//TODO remove existing reports left by the bot
 					var Comments = Github.PullRequests.Comments(PullRequestNumber);
+					Debug.LogInfo("Comments are " + JSON.stringify(Comments));
+					Comments.map(function(Comment){
+
+						Debug.LogInfo("Comment is " + JSON.stringify(Comment));
+						//Delete any comments left previously by the codistobot
+						if(Comment.commenter_login == "codistobot") {
+							Github.PullRequests.DeleteComment(Comment.id);
+							Debug.LogInfo("Deleting bot comment");
+						}
+					});
 
 
 

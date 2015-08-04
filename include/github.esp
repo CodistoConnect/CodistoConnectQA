@@ -284,8 +284,6 @@
 				return Files;
 			},
 			Comments: function(Issue) {
-				Debug.LogInfo("Fetching comments for Issue " + Issue);
-
 
 				var h = new HttpClient();
 
@@ -295,13 +293,31 @@
 				h.SetRequestHeader("User-Agent" , "CodistoConnect");
 				h.Send();
 
-				Debug.LogInfo("Comments are ...");
-				Debug.LogInfo(h.ResponseText);
-
-				Debug.LogInfo(JSON.stringify(h.ResponseObject));
+				var Comments = [];
+				for(var Comment of h.ResponseObject) {
+					Comments.push({
+						"id" : Comment.id,
+						"commenter_login" : Comment["user"]["login"],
+						"created_at" : Comment["created_at"],
+						"updated_at" : Comment["updated_at"],
+						"body" : Comment["body"]
+					});
+				}
+				return Comments;
 
 			},
+			DeleteComment: function(Id) {
 
+				var h = new HttpClient();
+				h.Open("DELETE", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/comments/" + Id + "?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				return h.ResponseText;
+
+			},
 			//Comment at the end of the pull request
 			Comment: function(Issue, Comment) {
 
