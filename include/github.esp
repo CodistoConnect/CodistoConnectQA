@@ -273,15 +273,16 @@
 					var CommitID = Ref.split("=")[1];
 
 					//TODO confirm how it is ordered...
+
 					if(!(FileObj.filename in Files)){
 						Files[FileObj.filename] = {
 							"filesha" : "tbd",
-							"sha"	: CommitID, //the commit sha not the sha of the file
+							"sha"	: [],
 							"status" : FileObj.status
 						}
 					}
 
-					//
+					////the commit sha not the sha hash of the file
 					Files[FileObj.filename].sha.unshift(CommitID);
 
 
