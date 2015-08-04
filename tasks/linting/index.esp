@@ -108,7 +108,8 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 						Report.push("<h4>Configuration</h4>");
 						Report.push("");
-						Report.push("- [x] PHP Minimimum version (" + MIN_PHP + ") compatability check");
+						Report.push("- [x] PHP Configuration tool")
+						Report.push("- [x] PHP Minimimum version (" + MIN_PHP + ") compatibility check");
 						Report.push("<br>");
 						Report.push("");
 
@@ -128,7 +129,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 									if(FileName != CurrentFileName) {
 
-										Report.push("<br>");
 										Report.push("");
 										Report.push('<h5><a href="' + BlobURL + '"</a>' + FileName + '</h5>');
 										Report.push("|Line  | Error |");
@@ -146,13 +146,13 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 							Report.push("<br>");
 						};
-
+						
 						if(LintResults.errors.length > 0) {
-							AppendReport("Phpcs Errors", LintResults.errors);
+							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer"><Phpcs</a> Errors', LintResults.errors);
 						}
 
 						if(LintResults.warnings.length > 0) {
-							AppendReport("Phpcs Warnings", LintResults.warnings);
+							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer"><Phpcs</a> Warnings', LintResults.warnings);
 						}
 
 					} else {
