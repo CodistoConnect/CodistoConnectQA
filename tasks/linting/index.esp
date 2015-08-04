@@ -170,6 +170,8 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						var ChangeSetErrors = LintResults.errors.length > 0 && CheckinChangeset(LintResults.errors);
 						var ChangeSetWarnings = LintResults.warnings.length > 0 && CheckinChangeset(LintResults.warnings);
 
+						Debug.LogInfo("ChangeSetErrors is " + ChangeSetErrors);
+						Debug.LogInfo("ChangeSetWarnings is " + ChangeSetWarnings);
 
 						if(ChangeSetErrors) {
 
@@ -182,8 +184,8 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 						}
 
-						StaticAnalyisisPass = ChangeSetErrors = 0 && ChangeSetWarnings == 0;
-
+						StaticAnalyisisPass = ChangeSetErrors == 0 && ChangeSetWarnings == 0;
+						Debug.LogInfo("Static AnalysisPass is " + StaticAnalyisisPass);
 
 					} else {
 
@@ -200,15 +202,15 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						Report.push("- [x] Static analysis failed");
 
 
-					if(LintResults.warnings.length > 0)
+					if(ChangeSetWarnings > 0)
 						Report.push("- [x] Warnings were triggered");
 
-					if(LintResults.errors.length > 0)
+					if(ChangeSetErrors > 0)
 						Report.push("- [x] Errors were triggered");
 
 
 					//If there were errors add hints
-					if(LintResults.errors.length > 0 || LintResults.warnings.length > 0) {
+					if(!StaticAnalyisisPass) {
 
 						Report.push("");
 						Report.push("<h4>Tips</h4>");
@@ -242,8 +244,11 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 					var Labels = Github.Labels.ListIssue(PullRequestNumber);
 
+					
+					Debug.LogInfo("Labels are " + JSON.stringify(Labels));
+
 					//Update label state
-					if (LintResults.errors.length > 0 || LintResults.warnings.length > 0) {
+					if (!StaticAnalyisisPass) {
 						if(!("static analysis failed" in Labels))
 							Github.Labels.Add(PullRequestNumber, "static analysis failed");
 
@@ -251,7 +256,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
 
 					} else {
-
+						Debug.LogInfo("Adding pass label and removing failed label");
 						if(!("static analysis passed" in Labels))
 							Github.Labels.Add(PullRequestNumber, "static analysis passed");
 
