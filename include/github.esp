@@ -230,6 +230,8 @@
 
 			Files: function(Issue) {
 
+				Debug.LogInfo("Inside github.com - Getting list of Files for PullRequest " + Issue);
+
 				var h = new HttpClient();
 				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/files?access_token=" + Application.GITHUB_ACCESS_TOKEN);
 				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
@@ -237,15 +239,18 @@
 				h.SetRequestHeader("User-Agent" , "CodistoConnect");
 				h.Send();
 
-				var Files = {};
-				for(var File of h.ResponseObject) {
+				Debug.LogInfo("GET FILES FROM PULL REQUEST \n\n" + JSON.stringify(h.ResponseObject));
 
-					var Ref = File.contents_url.split("?")[1];
+
+				var Files = {};
+				for(var FileObj of h.ResponseObject) {
+					Debug.LogInfo("FileObj is " + JSON.stringify(FileObj));
+					var Ref = FileObj.contents_url.split("?")[1];
 					var CommitID = Ref.split("=")[1];
-;
-					Files[File.filename] = {
+
+					Files[FileObj.filename] = {
 						"sha"	: CommitID,
-						"status" : File.status
+						"status" : FileObj.status
 					}
 				}
 
@@ -266,7 +271,11 @@
 					"position": Line
 				};
 
+				Debug.LogInfo("Leavinging a comment , JSON is \n" + JSON.stringify(Packet));
+
 				h.Send(JSON.stringify(Packet));
+
+				Debug.LogInfo("Leaving a comment - ResponseText is " + h.ResponseText);
 				return h.ResponseText;
 
 			}

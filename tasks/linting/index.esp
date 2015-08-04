@@ -86,8 +86,7 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 				LintStatus = Lint(Hook.sha1);
 
 				var F = File.Open("lintstatus.txt", "wt+");
-				F.Write("\n\nLintStatus \n" + LintStatus);
-
+				F.Write("\n\nLintStatus \n" + JSON.stringify(LintStatus)); 
 				if (LintStatus.status == 200) {
 
 					var Labels = Github.Labels.ListIssue(PullRequestNumber);
@@ -97,6 +96,8 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					if (LintStatus.warnings.length > 0 || LintStatus.errors.length > 0) {
 
 						//Get list of files in this pull request
+						Debug.LogInfo("Getting list of files for Pullrequest " + PullRequestNumber);
+
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
 						F.Write("\n\nFiles in PullRequest are " + JSON.stringify(FilesMap));
 
@@ -108,8 +109,11 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 							var FileName = Error.filename.replace(LintStatus.pluginpath, "");
 							if(FileName in FilesMap) {
 
-								F.Write("\n\nLeaving a comment on line " + Error.line + " For file " + FileName);
+								F.Write("\n\nLeaving a comment on line " + Error.line + " For file " + FileName + " Error is " + Error.text);
 
+
+
+								//Perhaps this is erroneous - If the file was changed in multiple commits then it might be using the wrong sha to leave the comment
 								var FileCommitSha = FilesMap[FileName].sha;
 
 								if(!("static analysis failed" in Labels)) {
@@ -126,7 +130,10 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 
 								//Make sure the erroneous file is in the map above - you cannot leave comments on files that are not part of the changeset (git ignored etc)
-								Github.PullRequests.Comment(PullRequestNumber, FileCommitSha, FileName, Error.line, "BOT -> " + Error.text);
+							
+
+	
+								Github.PullRequests.Comment(PullRequestNumber, FileCommitSha, FileName, Error.line, "codistobot (Line - " + Error.line + ") - " + Error.text);
 							}
 
 						});
