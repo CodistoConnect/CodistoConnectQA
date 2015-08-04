@@ -143,9 +143,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 							Report.push("<h4>" + Class.toUpperCase() + "</h4>");
 
-
-
-
 							var CurrentFileName = "";
 
 							Collection.forEach(function(LogRow) {
@@ -158,12 +155,14 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 									Report.push("<h5>" + FileName + "</h5>");
 									Report.push("|Line  | Error |");
 									Report.push("|------| ------|");
+
+									CurrentFileName = FileName;
 								}
 
 								if (FileName in FilesMap) {
 
 
-									Report.push("|" + [LogRow.line, LogRow.text].join("|") + "|");
+									Report.push("|" + LogRow.line + "|" + LogRow.text + "|");
 
 									//grab out the most recent filesha so that we can provide direct line links
 
