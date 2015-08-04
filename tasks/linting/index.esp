@@ -108,7 +108,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 						Report.push("<h4>Configuration</h4>");
 						Report.push("");
-						Report.push("- [x] PHP Minimimum version " + MIN_PHP);
+						Report.push("- [x] PHP Minimimum version (" + MIN_PHP + ") compatability check");
 						Report.push("<br>");
 						Report.push("");
 
@@ -178,6 +178,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					//If there were errors add hints
 					if(LintResults.errors.length > 0 || LintResults.warnings.length > 0) {
 
+						Report.push("");
 						Report.push("<h4>Tips</h4>");
 						Report.push("");
 
