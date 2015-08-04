@@ -183,9 +183,9 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 						Report.push("```php");
 						Report.push("//To suppress analysis surround with the following directives")
-						Report.push("@codingStandardsIgnoreStart");
-						Report.push("//code ..")
-						Report.push("@codingStandardsIgnoreEnd");
+						Report.push("//@codingStandardsIgnoreStart");
+						Report.push("//Code to be ignored by phpcs ..")
+						Report.push("//@codingStandardsIgnoreEnd");
 						Report.push("```");
 
 					}
