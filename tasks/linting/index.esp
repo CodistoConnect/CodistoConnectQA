@@ -86,8 +86,10 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 				break;
 			case "unlabeled" :
 				break;
+			case "reopened":
+				//lint all over again
 			case "synchronize":
-			//fall through - another push to the branch the pull request is tracking
+				//fall through - another push to the branch the pull request is tracking
 			case "opened" :
 
 				var Report = [];
