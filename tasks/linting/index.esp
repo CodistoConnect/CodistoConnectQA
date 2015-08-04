@@ -9,6 +9,7 @@ var Lint = function(SHA1) {
 	var Status = 403;
 	var Errors = [];
 	var Warnings = [];
+	var PluginPath = "";
 
 	try {
 
@@ -16,9 +17,12 @@ var Lint = function(SHA1) {
 		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=5&stashpop=1&sha1=" + SHA1);
 		FCGIReq.Send();
 
+
+
 		if(FCGIReq.Status == 200) {
 
 			var ResponseBody = FCGIReq.ResponseBody.split("\n");
+			PluginPath = ResponseBody[ResponseBody.length - 2] + "/";
 
 			Status = FCGIReq.Status;
 			var FileNameToken = "FILE: ";
@@ -38,10 +42,10 @@ var Lint = function(SHA1) {
 
 					switch(Type){
 						case "ERROR":
-							Errors.push({"filename" : FileName.replace(LintResults.pluginpath, ""), "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
+							Errors.push({"filename" : FileName.replace(PluginPath, ""), "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
 							break;
 						case "WARNING":
-							Warnings.push({"filename" : FileName.replace(LintResults.pluginpath, ""), "line" : parseInt(LineTokens[0], 10), "text": LineTokens[2]});
+							Warnings.push({"filename" : FileName.replace(PluginPath, ""), "line" : parseInt(LineTokens[0].trim(), 10), "text": LineTokens[2]});
 							break;
 					}
 				}
@@ -59,7 +63,7 @@ var Lint = function(SHA1) {
 			"status" : Status,
 			"errors" : Errors,
 			"warnings" : Warnings,
-			"pluginpath" : ResponseBody[ResponseBody.length - 2] + "/"
+			"pluginpath" : PluginPath
 		};
 	}
 
