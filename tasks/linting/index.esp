@@ -97,43 +97,12 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 				LintResults = Lint(Hook.sha1);
 
-				var F = File.Open("lintstatus.txt", "wt+");
-				F.Write("\n\nLintStatus \n" + JSON.stringify(LintResults));
-
 				if (LintResults.status == 200) {
-
-					var Labels = Github.Labels.ListIssue(PullRequestNumber);
-					F.Write("\n\nLabels currently on Pullrequestnumber (" + PullRequestNumber + " ) are " + JSON.stringify(Labels));
 
 					if (LintResults.warnings.length > 0 || LintResults.errors.length > 0) {
 
-						//Get list of files in this pull request
-						Debug.LogInfo("Getting list of files for Pullrequest " + PullRequestNumber);
-
+						//Get list of files in this pull request - the linter may find erroneous files not part of this changeset. Discard
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
-						F.Write("\n\nFiles in PullRequest are " + JSON.stringify(FilesMap));
-
-						/*remember to fence code blocks with three backticks and php to do php syntax highlighting
-
-						 ```php
-						 ```
-
-						//to generate nicely formatted comments
-						 | First Header  | Second Header |
-						 | ------------- | ------------- |
-						 | Content Cell  | Content Cell  |
-						 | Content Cell  | Content Cell  |
-
-						 */
-
-						/*
-						Tasklists
-
-						 - [x] list syntax is required (any unordered or ordered list supported)
-						 - [x] this is a complete item
-						 - [ ] this is an incomplete item
-						 */
-
 
 						Report.push("<h4>Configuration</h4>");
 						Report.push("- [x] PHP Minimimum version " + MIN_PHP);
@@ -167,13 +136,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 									Report.push("|<a href=" + LineRef + ">" + LogRow.line + "</a>|" + LogRow.text + "|");
 
-									//grab out the most recent filesha so that we can provide direct line links
-
-									/*
-									 https://github.com/CodistoConnect/CodistoConnect/pull/67/files#diff-18f0ae73d0c2499bbd47700ceb38bdffR36
-									 I think the diff is probably the file sha which will come back
-									 */
-									//var FileCommitSha = FilesMap[FileName].sha;
 								}
 
 							});
@@ -208,20 +170,33 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					if(LintResults.errors.length > 0)
 						Report.push("- [x] Errors were triggered");
 
+					//TODO remove existing reports left by the bot
+					var Comments = Github.PullRequests.Comments(PullRequestNumber);
 
-					//Update label state
-					if (LintResults.errors.length > 0 || LintResults.warnings.length > 0) {
 
-						Github.Labels.Add(PullRequestNumber, "static analysis failed");
-						Github.Labels.Remove(PullRequestNumber, "static analysis passed");
-
-					} else {
-						Github.Labels.Add(PullRequestNumber, "static analysis passed");
-						Github.Labels.Remove(PullRequestNumber, "static analysis failed");
-					}
 
 					//Leave final review comment
 					Github.PullRequests.Comment(PullRequestNumber, Report.join("\n"));
+
+
+					var Labels = Github.Labels.ListIssue(PullRequestNumber);
+
+					//Update label state
+					if (LintResults.errors.length > 0 || LintResults.warnings.length > 0) {
+						if(!("static analysis failed" in Labels))
+							Github.Labels.Add(PullRequestNumber, "static analysis failed");
+
+						if("static analysis passed" in Labels)
+							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
+
+					} else {
+
+						if(!("static analysis passed" in Labels))
+							Github.Labels.Add(PullRequestNumber, "static analysis passed");
+
+						if("static analysis failed" in Labels)
+							Github.Labels.Remove(PullRequestNumber, "static analysis failed");
+					}
 
 
 				}

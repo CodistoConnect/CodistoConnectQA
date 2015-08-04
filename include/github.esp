@@ -230,7 +230,6 @@
 
 			Commits: function(Issue) {
 
-				Debug.LogInfo("Getting list of commits");
 				var h = new HttpClient();
 				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/commits?access_token=" + Application.GITHUB_ACCESS_TOKEN);
 				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
@@ -262,26 +261,11 @@
 				h.SetRequestHeader("User-Agent" , "CodistoConnect");
 				h.Send();
 
-				var F = File.Open("FileContents.txt", "wt+");
-
 				var Files = {};
 				for(var FileObj of h.ResponseObject) {
 
-					//I think the code below is problematic in that the File might have been modified in multiple commits but only the most recent will populate below
-					//So I need to make the sha an array and unshift onto it so the first one is the most recent commit
-					//Debug.LogInfo("FileObj is " + JSON.stringify(FileObj));
-
-					Debug.LogInfo(FileObj.filename);
-					if(FileObj.filename == "code/community/Codisto/Sync/controllers/IndexController.php")
-						Debug.LogInfo(JSON.stringify(FileObj));
-
-
-					F.Write(JSON.stringify(FileObj) + "\n");
-
 					var Ref = FileObj.contents_url.split("?")[1];
 					var CommitID = Ref.split("=")[1];
-
-					//TODO confirm how it is ordered...
 
 					if(!(FileObj.filename in Files)){
 						Files[FileObj.filename] = {
@@ -295,12 +279,26 @@
 					////the commit sha not the sha hash of the file
 					Files[FileObj.filename].sha.unshift(CommitID);
 
-
 				}
 
-				F.Close();
 				return Files;
 			},
+			Comments: function(Issue) {
+
+				var h = new HttpClient();
+				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				Debug.LogInfo("Comments are ...");
+				Debug.LogInfo(h.ResponseText);
+
+				Debug.LogInfo(JSON.stringify(h.ResponseObject));
+
+			},
+
 			//Comment at the end of the pull request
 			Comment: function(Issue, Comment) {
 
