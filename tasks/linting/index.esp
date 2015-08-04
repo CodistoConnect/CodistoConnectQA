@@ -85,25 +85,39 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 				LintStatus = Lint(Hook.sha1);
 
+				var F = File.Open("lintstatus.txt", "wt+");
+				F.Write("\n\nLintStatus \n" + LintStatus);
+
 				if (LintStatus.status == 200) {
 
 					var Labels = Github.Labels.ListIssue(PullRequestNumber);
+					F.Write("\n\nLabels currently on Pullrequestnumber (" + PullRequestNumber + " ) are " + JSON.stringify(Labels));
+
 
 					if (LintStatus.warnings.length > 0 || LintStatus.errors.length > 0) {
 
 						//Get list of files in this pull request
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+						F.Write("\n\nFiles in PullRequest are " + JSON.stringify(FilesMap));
+
+
+
 
 						LintStatus.errors.forEach(function(Error){
 
 							var FileName = Error.filename.replace(LintStatus.pluginpath, "");
 							if(FileName in FilesMap) {
 
+								F.Write("\n\nLeaving a comment on line " + Error.line + " For file " + FileName);
+
 								var FileCommitSha = FilesMap[FileName].sha;
 
 								if(!("static analysis failed" in Labels)) {
 
+									F.Write("\n\n Static analysis failed label being added (FAIL)");
 									Github.Labels.Add(PullRequestNumber, "static analysis failed");
+
+									F.Write("\n\n Static analysis passed label being removed (FAIL)");
 									Github.Labels.Remove(PullRequestNumber, "static analysis passed");
 									
 									Labels["static analysis failed"] = true;
@@ -121,12 +135,19 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 					} else {
 
-						if(!"static analysis passed" in Labels)
+						if(!"static analysis passed" in Labels) {
+							F.Write("\n\n Static analysis passed label being added (PASS)");
 							Github.Labels.Add(PullRequestNumber, "static analysis passed");
-						if("static analysis failed" in Labels)
+						}
+						if("static analysis failed" in Labels) {
+							F.Write("\n\n Static analysis failed label being removed (PASS)");
 							Github.Labels.Remove(PullRequestNumber, "static analysis failed");
+						}
 					}
 				}
+
+				F.Close();
+
 				break;
 			case "reopened":
 				break;
