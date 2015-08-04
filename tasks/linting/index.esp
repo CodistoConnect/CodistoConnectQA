@@ -152,17 +152,20 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 								if(FileName != CurrentFileName) {
 
 									Report.push("<br>");
+									Report.push("");
 									Report.push("<h5>" + FileName + "</h5>");
 									Report.push("|Line  | Error |");
 									Report.push("|------| ------|");
-
+											
 									CurrentFileName = FileName;
 								}
 
 								if (FileName in FilesMap) {
 
+									var BlobURL = FilesMap[FileName].blob_url;
+									var LineRef = BlobURL + "#L" + LogRow.line;
 
-									Report.push("|" + LogRow.line + "|" + LogRow.text + "|");
+									Report.push("|<a href=" + LineRef + ">" + LogRow.line + "</a>|" + LogRow.text + "|");
 
 									//grab out the most recent filesha so that we can provide direct line links
 
@@ -179,11 +182,11 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						};
 
 						if(LintResults.errors.length > 0) {
-							AppendReport("Errors", LintResults.errors);
+							AppendReport("Phpcs Errors", LintResults.errors);
 						}
 
 						if(LintResults.warnings.length > 0) {
-							AppendReport("Warnings", LintResults.warnings);
+							AppendReport("Phpcs Warnings", LintResults.warnings);
 						}
 
 					} else {

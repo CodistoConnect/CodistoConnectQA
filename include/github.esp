@@ -262,12 +262,21 @@
 				h.SetRequestHeader("User-Agent" , "CodistoConnect");
 				h.Send();
 
+				var F = File.Open("FileContents.txt", "wt+");
+
 				var Files = {};
 				for(var FileObj of h.ResponseObject) {
 
 					//I think the code below is problematic in that the File might have been modified in multiple commits but only the most recent will populate below
 					//So I need to make the sha an array and unshift onto it so the first one is the most recent commit
-					Debug.LogInfo("FileObj is " + JSON.stringify(FileObj));
+					//Debug.LogInfo("FileObj is " + JSON.stringify(FileObj));
+
+					Debug.LogInfo(FileObj.filename);
+					if(FileObj.filename == "code/community/Codisto/Sync/controllers/IndexController.php")
+						Debug.LogInfo(JSON.stringify(FileObj));
+
+
+					F.Write(JSON.stringify(FileObj) + "\n");
 
 					var Ref = FileObj.contents_url.split("?")[1];
 					var CommitID = Ref.split("=")[1];
@@ -276,9 +285,10 @@
 
 					if(!(FileObj.filename in Files)){
 						Files[FileObj.filename] = {
-							"filesha" : "tbd",
+							"filesha" : FileObj.sha,
 							"sha"	: [],
-							"status" : FileObj.status
+							"status" : FileObj.status,
+							"blob_url" : FileObj.blob_url
 						}
 					}
 
@@ -288,6 +298,7 @@
 
 				}
 
+				F.Close();
 				return Files;
 			},
 			//Comment at the end of the pull request
