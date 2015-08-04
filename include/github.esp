@@ -228,9 +228,32 @@
 		},
 		PullRequests: {
 
-			Files: function(Issue) {
+			Commits: function(Issue) {
 
-				Debug.LogInfo("Inside github.com - Getting list of Files for PullRequest " + Issue);
+				Debug.LogInfo("Getting list of commits");
+				var h = new HttpClient();
+				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/commits?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				var Commits = [];
+				for(var Commit of h.ResponseObject) {
+
+					var Commiter = Commit["commit"]["commiter"];
+
+					Commits.push({
+						"sha": Commit["sha"],
+						"commiter_name" : Commiter["name"],
+						"commiter_email" : Commiter["email"],
+						"commiter_date" : Commiter["date"]
+					})
+				}
+
+
+			},
+			Files: function(Issue) {
 
 				var h = new HttpClient();
 				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/files?access_token=" + Application.GITHUB_ACCESS_TOKEN);
@@ -239,24 +262,50 @@
 				h.SetRequestHeader("User-Agent" , "CodistoConnect");
 				h.Send();
 
-				Debug.LogInfo("GET FILES FROM PULL REQUEST \n\n" + JSON.stringify(h.ResponseObject));
-
-
 				var Files = {};
 				for(var FileObj of h.ResponseObject) {
+
+					//I think the code below is problematic in that the File might have been modified in multiple commits but only the most recent will populate below
+					//So I need to make the sha an array and unshift onto it so the first one is the most recent commit
 					Debug.LogInfo("FileObj is " + JSON.stringify(FileObj));
+
 					var Ref = FileObj.contents_url.split("?")[1];
 					var CommitID = Ref.split("=")[1];
 
-					Files[FileObj.filename] = {
-						"sha"	: CommitID,
-						"status" : FileObj.status
+					//TODO confirm how it is ordered...
+					if(!(FileObj.filename in Files)){
+						Files[FileObj.filename] = {
+							"filesha" : "tbd",
+							"sha"	: CommitID, //the commit sha not the sha of the file
+							"status" : FileObj.status
+						}
 					}
+
+					//
+					Files[FileObj.filename].sha.unshift(CommitID);
+
+
 				}
 
 				return Files;
 			},
-			Comment: function(Issue, SHA1, FileName, Line, Text) {
+			//Comment at the end of the pull request
+			Comment: function(Issue, Comment) {
+
+				var h = new HttpClient();
+				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send(JSON.stringify({
+					"body": Comment
+				}));
+
+				return h.ResponseText;
+
+			},
+			//Comment on a particular line
+			CommentLine: function(Issue, SHA1, FileName, Line, Text) {
 
 				var h = new HttpClient();
 				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
@@ -271,11 +320,7 @@
 					"position": Line
 				};
 
-				Debug.LogInfo("Leavinging a comment , JSON is \n" + JSON.stringify(Packet));
-
 				h.Send(JSON.stringify(Packet));
-
-				Debug.LogInfo("Leaving a comment - ResponseText is " + h.ResponseText);
 				return h.ResponseText;
 
 			}
