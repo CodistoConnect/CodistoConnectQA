@@ -93,7 +93,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 			case "opened" :
 
 				var Report = [];
-				var StaticAnalyisisPass = false;
+				var StaticAnalysisPass = false;
 				var Warnings = false;
 				var Errors = false;
 
@@ -104,7 +104,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 					if (LintResults.warnings.length > 0 || LintResults.errors.length > 0) {
 
 						var ChangeSetWarnings = 0;
-
 
 						//Get list of files in this pull request - the linter may find erroneous files not part of this changeset. Discard
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
@@ -170,33 +169,30 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						var ChangeSetErrors = LintResults.errors.length > 0 && CheckinChangeset(LintResults.errors);
 						var ChangeSetWarnings = LintResults.warnings.length > 0 && CheckinChangeset(LintResults.warnings);
 
-						Debug.LogInfo("ChangeSetErrors is " + ChangeSetErrors);
-						Debug.LogInfo("ChangeSetWarnings is " + ChangeSetWarnings);
-
 						if(ChangeSetErrors) {
 
 							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Errors', LintResults.errors);
 
 						}
+
 						if(ChangeSetWarnings) {
 
 							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Warnings', LintResults.warnings);
 
 						}
 
-						StaticAnalyisisPass = ChangeSetErrors == 0 && ChangeSetWarnings == 0;
-						Debug.LogInfo("Static AnalysisPass is " + StaticAnalyisisPass);
+						StaticAnalysisPass = ChangeSetErrors == 0 && ChangeSetWarnings == 0;
 
 					} else {
 
 						//No errors or warnings at all. Lovely
-						StaticAnalyisisPass = true;
+						StaticAnalysisPass = true;
 
 					}
 
 					Report.push("<h4>Summary</h4>");
 
-					if(StaticAnalyisisPass)
+					if(StaticAnalysisPass)
 						Report.push("- [x] Static analysis passed");
 					else
 						Report.push("- [x] Static analysis failed");
@@ -210,7 +206,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 
 					//If there were errors add hints
-					if(!StaticAnalyisisPass) {
+					if(!StaticAnalysisPass) {
 
 						Report.push("");
 						Report.push("<h4>Tips</h4>");
@@ -236,19 +232,13 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						}
 					});
 
-
-
 					//Leave final review comment
 					Github.PullRequests.Comment(PullRequestNumber, Report.join("\n"));
 
-
 					var Labels = Github.Labels.ListIssue(PullRequestNumber);
 
-					
-					Debug.LogInfo("Labels are " + JSON.stringify(Labels));
-
 					//Update label state
-					if (!StaticAnalyisisPass) {
+					if (!StaticAnalysisPass) {
 						if(!("static analysis failed" in Labels))
 							Github.Labels.Add(PullRequestNumber, "static analysis failed");
 
@@ -256,7 +246,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
 
 					} else {
-						Debug.LogInfo("Adding pass label and removing failed label");
+
 						if(!("static analysis passed" in Labels))
 							Github.Labels.Add(PullRequestNumber, "static analysis passed");
 
