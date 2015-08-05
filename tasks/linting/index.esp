@@ -4,7 +4,7 @@ var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
-var MIN_PHP="5";
+var MIN_PHP = Application.PHP_MIN_VERSION || "5.2";
 
 
 var Lint = function(SHA1) {
