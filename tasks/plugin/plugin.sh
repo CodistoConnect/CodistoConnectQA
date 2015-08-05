@@ -121,13 +121,6 @@ PLUGINVERSION=`awk '/<version>/ {print $1}' $PLUGINPATH/code/community/Codisto/S
 logger -s "PLUGINVERSION is $PLUGINVERSION"
 
 
-if [ -z $RESELLER ]; then
-	logger -s "Reseller is not set wtf"
-else
-	logger -s "Reseller is set"
-fi
-
-
 if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
  	logger -s "Master was pushed and reseller was not specified so I'm doing full build"

@@ -31,7 +31,7 @@
 
 
 							var CommitDetails = ("commits" in Request.Form && Request.Form["commits"] && Request.Form["commits"].length > 0)
-								? {sha1: Request.Form.commits[0].id, message: Request.Form.commits[0].message} : {	sha1: "", message: ""};
+								? {sha1: Request.Form.commits[Request.Form["commits"].length -1 ].id, message: Request.Form.commits[Request.Form["commits"].length -1].message} : {	sha1: "", message: ""};
 
 							Callback.Fn({
 								"ref": Request.Form["ref"],
@@ -228,6 +228,30 @@
 		},
 		PullRequests: {
 
+			Commits: function(Issue) {
+
+				var h = new HttpClient();
+				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/commits?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				var Commits = [];
+				for(var Commit of h.ResponseObject) {
+
+					var Commiter = Commit["commit"]["commiter"];
+
+					Commits.push({
+						"sha": Commit["sha"],
+						"commiter_name" : Commiter["name"],
+						"commiter_email" : Commiter["email"],
+						"commiter_date" : Commiter["date"]
+					})
+				}
+
+
+			},
 			Files: function(Issue) {
 
 				var h = new HttpClient();
@@ -238,20 +262,79 @@
 				h.Send();
 
 				var Files = {};
-				for(var File of h.ResponseObject) {
+				for(var FileObj of h.ResponseObject) {
 
-					var Ref = File.contents_url.split("?")[1];
+					var Ref = FileObj.contents_url.split("?")[1];
 					var CommitID = Ref.split("=")[1];
-;
-					Files[File.filename] = {
-						"sha"	: CommitID,
-						"status" : File.status
+
+					if(!(FileObj.filename in Files)){
+						Files[FileObj.filename] = {
+							"filesha" : FileObj.sha,
+							"sha"	: [],
+							"status" : FileObj.status,
+							"blob_url" : FileObj.blob_url
+						}
 					}
+
+					////the commit sha not the sha hash of the file
+					Files[FileObj.filename].sha.unshift(CommitID);
+
 				}
 
 				return Files;
 			},
-			Comment: function(Issue, SHA1, FileName, Line, Text) {
+			Comments: function(Issue) {
+
+				var h = new HttpClient();
+
+				h.Open("GET", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				var Comments = [];
+				for(var Comment of h.ResponseObject) {
+					Comments.push({
+						"id" : Comment.id,
+						"commenter_login" : Comment["user"]["login"],
+						"created_at" : Comment["created_at"],
+						"updated_at" : Comment["updated_at"],
+						"body" : Comment["body"]
+					});
+				}
+				return Comments;
+
+			},
+			DeleteComment: function(Id) {
+
+				var h = new HttpClient();
+				h.Open("DELETE", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/comments/" + Id + "?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send();
+
+				return h.ResponseText;
+
+			},
+			//Comment at the end of the pull request
+			Comment: function(Issue, Comment) {
+
+				var h = new HttpClient();
+				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/issues/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
+				h.SetRequestHeader("Accept", "application/vnd.github.v3+json");
+				h.SetRequestHeader("Content-Type", "application/json");
+				h.SetRequestHeader("User-Agent" , "CodistoConnect");
+				h.Send(JSON.stringify({
+					"body": Comment
+				}));
+
+				return h.ResponseText;
+
+			},
+			//Comment on a particular line
+			CommentLine: function(Issue, SHA1, FileName, Line, Text) {
 
 				var h = new HttpClient();
 				h.Open("POST", "https://api.github.com/repos/CodistoConnect/CodistoConnect/pulls/" + Issue + "/comments?access_token=" + Application.GITHUB_ACCESS_TOKEN);
