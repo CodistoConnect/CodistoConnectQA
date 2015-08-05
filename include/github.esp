@@ -31,7 +31,7 @@
 
 
 							var CommitDetails = ("commits" in Request.Form && Request.Form["commits"] && Request.Form["commits"].length > 0)
-								? {sha1: Request.Form.commits[0].id, message: Request.Form.commits[0].message} : {	sha1: "", message: ""};
+								? {sha1: Request.Form.commits[Request.Form["commits"].length -1 ].id, message: Request.Form.commits[Request.Form["commits"].length -1].message} : {	sha1: "", message: ""};
 
 							Callback.Fn({
 								"ref": Request.Form["ref"],
