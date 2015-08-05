@@ -182,7 +182,7 @@ Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 
 		//When we update the data-install etc and add second commit and push another web hook receive will happen.. don't build if we know that is the case
 		//also don't build if the commit message contains [plugin skip]
-		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog" && Hook.message.indexOf("[plugin skip]") != -1) {
+		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog" && Hook.message.indexOf("[plugin skip]") == -1) {
 
 			var BuildStatus = BuildPlugin(Hook.branch, Hook.sha1);
 
