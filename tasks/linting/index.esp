@@ -4,21 +4,28 @@ var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
+var MIN_PHP = Application.PHP_MIN_VERSION || "5.2";
+
+
 var Lint = function(SHA1) {
 
 	var Status = 403;
 	var Errors = [];
 	var Warnings = [];
+	var PluginPath = "";
 
 	try {
 
 		var FCGIReq = new FastCGIClient();
-		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=5&stashpop=1&sha1=" + SHA1);
+		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=" + MIN_PHP + "&stashpop=1&sha1=" + SHA1);
 		FCGIReq.Send();
+
+
 
 		if(FCGIReq.Status == 200) {
 
 			var ResponseBody = FCGIReq.ResponseBody.split("\n");
+			PluginPath = ResponseBody[ResponseBody.length - 2] + "/";
 
 			Status = FCGIReq.Status;
 			var FileNameToken = "FILE: ";
@@ -38,10 +45,10 @@ var Lint = function(SHA1) {
 
 					switch(Type){
 						case "ERROR":
-							Errors.push({"filename" : FileName, "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
+							Errors.push({"filename" : FileName.replace(PluginPath, ""), "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
 							break;
 						case "WARNING":
-							Warnings.push({"filename" : FileName, "line" : parseInt(LineTokens[0], 10), "text": LineTokens[2]});
+							Warnings.push({"filename" : FileName.replace(PluginPath, ""), "line" : parseInt(LineTokens[0].trim(), 10), "text": LineTokens[2]});
 							break;
 					}
 				}
@@ -59,16 +66,16 @@ var Lint = function(SHA1) {
 			"status" : Status,
 			"errors" : Errors,
 			"warnings" : Warnings,
-			"pluginpath" : ResponseBody[ResponseBody.length - 2] + "/"
+			"pluginpath" : PluginPath
 		};
 	}
 
 };
 
-Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
+if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 		var PullRequestNumber = Hook.number;
-		var LintStatus = { status: 200};
+		var LintResults = {status: 200};
 
 		switch (Hook.action) {
 			case "assigned" :
@@ -79,60 +86,190 @@ Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 				break;
 			case "unlabeled" :
 				break;
+			case "reopened":
+				//lint all over again
 			case "synchronize":
-			//fall through - another push to the branch the pull request is tracking
+				//fall through - another push to the branch the pull request is tracking
 			case "opened" :
 
-				LintStatus = Lint(Hook.sha1);
+				var Report = [];
+				var StaticAnalysisPass = false;
+				var Warnings = false;
+				var Errors = false;
 
-				if (LintStatus.status == 200) {
+				LintResults = Lint(Hook.sha1);
 
-					var Labels = Github.Labels.ListIssue(PullRequestNumber);
+				if (LintResults.status == 200) {
 
-					if (LintStatus.warnings.length > 0 || LintStatus.errors.length > 0) {
+					if (LintResults.warnings.length > 0 || LintResults.errors.length > 0) {
 
-						if(!("static analysis failed" in Labels))
-							Github.Labels.Add(PullRequestNumber, "static analysis failed");
-						if("static analysis passed" in Labels)
-							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
+						var ChangeSetWarnings = 0;
 
-
-						//Get list of files in this pull request
+						//Get list of files in this pull request - the linter may find erroneous files not part of this changeset. Discard
 						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
 
-						LintStatus.errors.forEach(function(Error){
+						Report.push("<h4>Configuration</h4>");
+						Report.push("");
+						Report.push("- [x] PHP Minimimum version (" + MIN_PHP + ") compatibility check");
+						Report.push("<br>");
+						Report.push("");
 
-							var FileName = Error.filename.replace(LintStatus.pluginpath, "");
-							if(FileName in FilesMap) {
 
-								var FileCommitSha = FilesMap[FileName].sha;
+						var CheckinChangeset = function(Set) {
 
-								//Make sure the erroneous file is in the map above - you cannot leave comments on files that are not part of the changeset (git ignored etc)
-								Github.PullRequests.Comment(PullRequestNumber, FileCommitSha, FileName, Error.line, "BOT -> " + Error.text);
+							for(let i = 0; i < Set.length; i++) {
+
+								var LogRow = Set[i];
+								var FileName = LogRow.filename;
+
+								//There is at least one applicable file
+								if (FileName in FilesMap)
+									return 1;
+
 							}
 
-						});
+							return 0;
 
-						//TODO consider sending a slack notification with the full lint report if it failed
+						};
+
+						var AppendReport = function(Class, Collection) {
+
+							Report.push("<h4>" + Class + "</h4>");
+
+							var CurrentFileName = "";
+
+							Collection.forEach(function(LogRow) {
+
+								var FileName = LogRow.filename;
+
+								if (FileName in FilesMap) {
+
+									var BlobURL = FilesMap[FileName].blob_url;
+
+									if(FileName != CurrentFileName) {
+
+										Report.push("");
+										Report.push('<h5><a href="' + BlobURL + '"</a>' + FileName + '</h5>');
+										Report.push("|Line  | Error |");
+										Report.push("|------| ------|");
+
+										CurrentFileName = FileName;
+									}
+
+									var LineRef = BlobURL + "#L" + LogRow.line;
+									Report.push('|<a href="' + LineRef +'">' + LogRow.line + '</a>|' + LogRow.text + '|');
+
+								}
+
+							});
+
+							Report.push("<br>");
+						};
+
+						var ChangeSetErrors = LintResults.errors.length > 0 && CheckinChangeset(LintResults.errors);
+						var ChangeSetWarnings = LintResults.warnings.length > 0 && CheckinChangeset(LintResults.warnings);
+
+						if(ChangeSetErrors) {
+
+							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Errors', LintResults.errors);
+
+						}
+
+						if(ChangeSetWarnings) {
+
+							AppendReport('<a href="https://github.com/squizlabs/PHP_CodeSniffer">Phpcs</a> Warnings', LintResults.warnings);
+
+						}
+
+						StaticAnalysisPass = ChangeSetErrors == 0 && ChangeSetWarnings == 0;
 
 					} else {
 
-						if(!"static analysis passed" in Labels)
+						//No errors or warnings at all. Lovely
+						StaticAnalysisPass = true;
+
+					}
+
+					Report.push("<h4>Summary</h4>");
+
+					if(StaticAnalysisPass)
+						Report.push("- [x] Static analysis passed");
+					else
+						Report.push("- [x] Static analysis failed");
+
+
+					if(ChangeSetWarnings > 0)
+						Report.push("- [x] Warnings were triggered");
+
+					if(ChangeSetErrors > 0)
+						Report.push("- [x] Errors were triggered");
+
+
+					//If there were errors add hints
+					if(!StaticAnalysisPass) {
+
+						Report.push("");
+						Report.push("<h4>Tips</h4>");
+						Report.push("");
+
+						Report.push("```php");
+						Report.push("//To suppress analysis surround with the following directives")
+						Report.push("//@codingStandardsIgnoreStart");
+						Report.push("//Code to be ignored by phpcs ..")
+						Report.push("//@codingStandardsIgnoreEnd");
+						Report.push("```");
+
+					}
+
+					var Comments = Github.PullRequests.Comments(PullRequestNumber);
+					Comments.map(function(Comment){
+
+						//Delete any comments left previously by the codistobot
+						if(Comment.commenter_login == "codistobot") {
+
+							Github.PullRequests.DeleteComment(Comment.id);
+
+						}
+					});
+
+					//Leave final review comment
+					Github.PullRequests.Comment(PullRequestNumber, Report.join("\n"));
+
+					var Labels = Github.Labels.ListIssue(PullRequestNumber);
+
+					//Update label state
+					if (!StaticAnalysisPass) {
+						if(!("static analysis failed" in Labels))
+							Github.Labels.Add(PullRequestNumber, "static analysis failed");
+
+						if("static analysis passed" in Labels)
+							Github.Labels.Remove(PullRequestNumber, "static analysis passed");
+
+					} else {
+
+						if(!("static analysis passed" in Labels))
 							Github.Labels.Add(PullRequestNumber, "static analysis passed");
+
 						if("static analysis failed" in Labels)
 							Github.Labels.Remove(PullRequestNumber, "static analysis failed");
 					}
+
+
 				}
+
 				break;
+
 			case "reopened":
 				break;
 
 		}
 
-		Response.Status = LintStatus.status;
+		Response.Status = LintResults.status;
 		Response.Write(Response.Status == 200 ? "OK" : "Error");
 
-});
+	})) {
+
+}
 
 Github.Hooks.process();
 

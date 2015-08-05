@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Attempt to use locate as it is faster (if Magento is in the database
-MAGEPATH=$(locate -b '\mage' | while IFS= read -r line; do [[ -x "$line" ]] && [[ -f "$line" ]] && echo $line; done)
+MAGEPATH=$(locate -b '\mage' | while IFS= read -r line; do [[ -x "$line" ]] && [[ -f "$line" ]] && echo "$line"; done)
 
 #Not in the database so just use find
 if [ -z $MAGEPATH ]; then
@@ -15,5 +15,5 @@ if [ -n $MAGEPATH ]; then
 
         cd "$MAGEPATH"
         rm app/design/ebay/README 1>/dev/null 2>&1
-        ./mage uninstall community CodistoConnect 1>/dev/null 2>&1 && wget -O plugin.tgz https://qa.codisto.com/plugin/getstable && ./mage install-file plugin.tgz && rm plugin.tgz
+        ./mage uninstall community CodistoConnect 1>/dev/null 2>&1 && {PLUGIN_FETCH} && ./mage install-file plugin.tgz && rm plugin.tgz
 fi

@@ -95,7 +95,41 @@ else {
 }
 
 if(/^\/plugin\/install/.test(Request.ServerVariables.URL)) {
-	ServeFile("/tasks/plugin/install.sh");
+
+
+	var PluginToken = "{PLUGIN_FETCH}";
+	var F = File.Open("/tasks/plugin/install.sh");
+	var InstallScript = F.Read().split("\\n"); //its not splitting by just new lines /dev/null is captured too
+
+	for(var i = 0; i < InstallScript.length; i++) {
+
+		var InstallLine = InstallScript[i];
+
+		if(InstallLine.indexOf(PluginToken) > 0){
+
+			if("branch" in Request.QueryString && Request.QueryString["branch"]) {
+
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?branch="
+				+ Request.QueryString["branch"] + "&download=1\"");
+
+			} else if("sha1" in Request.QueryString && Request.QueryString["sha1"]){
+
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?sha1="
+				+ Request.QueryString["sha1"] + "&download=1\"");
+
+			} else {
+				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz https://qa.codisto.com/plugin/getstable");
+			}
+		}
+	}
+
+	Response.Status = 200;
+	Response.ContentType = "text/plain";
+	Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+	Response.Pragma = "no-cache";
+	Response.Expires = 0;
+	Response.Write(InstallScript);
+
 }
 
 if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
@@ -147,7 +181,8 @@ Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 	if(Hook.branch == "development" || Hook.branch == "master") {
 
 		//When we update the data-install etc and add second commit and push another web hook receive will happen.. don't build if we know that is the case
-		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog") {
+		//also don't build if the commit message contains [plugin skip]
+		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog" && Hook.message.indexOf("[plugin skip]") == -1) {
 
 			var BuildStatus = BuildPlugin(Hook.branch, Hook.sha1);
 
@@ -169,7 +204,7 @@ Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 					Logger.Log("GITHUB", ["Creating Release ", "TagName(", TagName, ") SHA1(" , TargetCommitSha, ")",
 						" Release Name ", ReleaseName, " TagDescription(" ,TagDescription, ")"].join(""), "Release");
 
-					//Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
+					Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
 
 					//Send notification to Slack room to inform developers a new build has been releases
 					Logger.Log("GITHUB", "Notifying developers release is ready", "Notifying in Slack");
