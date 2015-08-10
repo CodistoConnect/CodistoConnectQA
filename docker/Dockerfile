@@ -14,11 +14,16 @@ CMD ["/sbin/my_init"]
 # Nginx-PHP Installation
 RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y vim curl wget build-essential python-software-properties
+
 RUN add-apt-repository -y ppa:ondrej/php5
 RUN add-apt-repository -y ppa:nginx/stable
 RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
 		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes git
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get upgrade  -y --force-yes
 
 RUN sed -i "s/;date.timezone =.*/date.timezone = UTC/" /etc/php5/fpm/php.ini
 RUN sed -i "s/;date.timezone =.*/date.timezone = UTC/" /etc/php5/cli/php.ini
@@ -48,12 +53,19 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV MAGENTO_VERSION magento-ce-1.9.0.1
 
 #Not sure if I can set an environment variable as a result of a bash statement
-RUN CODISTOCONNECT_WORKSPACE=`mktemp -d /tmp/CodistoConnect.XXXXXXXX`
+RUN
 
+#RUN CODISTOCONNECT_WORKSPACE=`mktemp -d /tmp/CodistoConnect.XXXXXXXX`
+
+RUN echo "CWD is $CODISTOCONNECT_WORKSPACE"
 RUN cd $CODISTOCONNECT_WORKSPACE
 
+#No prompt on initial clone
+RUN ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
+
 # Checkout Codisto Connect module
-RUN git clone git@github.com:CodistoConnect/CodistoConnect.git
+RUN git clone git://github.com/CodistoConnect/CodistoConnect.git
+
 
 #Set the workspace environment variable that MageTestStand setup.sh script will use
 ENV WORKSPACE $CODISTOCONNECT_WORKSPACE
