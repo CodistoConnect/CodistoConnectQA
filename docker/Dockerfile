@@ -17,7 +17,11 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y vim curl wget build-esse
 
 RUN add-apt-repository -y ppa:ondrej/php5
 RUN add-apt-repository -y ppa:nginx/stable
+RUN add-apt-repository -y ppa:ondrej/mysql-5.6
+
+#sudo add-apt-repository 'deb http://ppa.launchpad.net/ondrej/mysql-5.6/ubuntu precise main'
 RUN apt-get update
+
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
 		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy
 
@@ -52,16 +56,18 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 #TODO create docker tags for different magento versions ... lets get this working first
 ENV MAGENTO_VERSION magento-ce-1.9.0.1
 
-#Not sure if I can set an environment variable as a result of a bash statement
-RUN
-
-#RUN CODISTOCONNECT_WORKSPACE=`mktemp -d /tmp/CodistoConnect.XXXXXXXX`
-
-RUN echo "CWD is $CODISTOCONNECT_WORKSPACE"
-RUN cd $CODISTOCONNECT_WORKSPACE
 
 #No prompt on initial clone
 RUN ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
+
+ENV CODISTOCONNECT_WORKSPACE=$HOME/Codisto
+
+RUN mkdir -p $CODISTOCONNECT_WORKSPACE
+
+RUN echo "Workspace is $CODISTOCONNECT_WORKSPACE"
+
+RUN cd $CODISTOCONNECT_WORKSPACE
+
 
 # Checkout Codisto Connect module
 RUN git clone git://github.com/CodistoConnect/CodistoConnect.git
@@ -71,7 +77,18 @@ RUN git clone git://github.com/CodistoConnect/CodistoConnect.git
 ENV WORKSPACE $CODISTOCONNECT_WORKSPACE
 
 
+#required for mysql cli binary
+RUN add-apt-repository -y ppa:ondrej/mysql-5.6
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6
 
+
+#TODO think about the following it can't complete the install until the linked container mysql is running
+ENV MAGENTO_DB_HOST=mysql
+#MAGENTO_DB_PORT
+ENV MAGENTO_DB_USER=magento
+ENV MAGENTO_DB_PASS=magento
+ENV MAGENTO_DB_NAME=magento
 
 
 RUN curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
