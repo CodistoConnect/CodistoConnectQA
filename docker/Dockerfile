@@ -92,3 +92,10 @@ ENV MAGENTO_DB_NAME=magento
 
 
 RUN curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
+
+
+#TODO Even though it goes against docker philospohy I think I'll just package up mysql server inside this container too
+#it allows me to completely install everything at BUILD time without relying on running mysql container
+#yes people could use docker-composer , start both up and stuff gets installed but then they have to either commit after the install or wait for install each time a container is spun up.
+
+#having it in a single container also enables docker run without relying on composer to help orchestrate everything or specifying links yourself at run
