@@ -1,0 +1,27 @@
+MAGENTO_LOCALE=en_GB
+MAGENTO_TIMEZONE=Pacific/Auckland
+MAGENTO_DEFAULT_CURRENCY=NZD
+MAGENTO_URL=http://mymagentostore.com
+
+MAGENTO_ADMIN_FIRSTNAME=Admin
+MAGENTO_ADMIN_LASTNAME=MyStore
+MAGENTO_ADMIN_EMAIL=amdin@mymagentostore.com
+MAGENTO_ADMIN_USERNAME=admin
+MAGENTO_ADMIN_PASSWORD=magentorocks1
+
+
+#these were settings from https://github.com/bradmccormack/docker-magento/blob/master/env   which point to the mysql container https://github.com/bradmccormack/docker-magento/blob/master/docker-compose.yml#L9
+MYSQL_HOST=mysql
+MYSQL_ROOT_PASSWORD=myrootpassword
+MYSQL_USER=magento
+MYSQL_PASSWORD=magento
+MYSQL_DATABASE=magento
+
+
+#https://hub.docker.com/_/mysql/
+#Setting these environment variables so MageTestStand can communicate with the linked mysql container correctly
+MAGENTO_DB_HOST=mysql
+#MAGENTO_DB_PORT
+MAGENTO_DB_USER=magento
+MAGENTO_DB_PASS=magento
+MAGENTO_DB_NAME=magento
