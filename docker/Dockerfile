@@ -13,13 +13,11 @@ CMD ["/sbin/my_init"]
 
 # Nginx-PHP Installation
 RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y vim curl wget build-essential python-software-properties
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y vim curl wget build-essential python-software-properties debconf-utils
 
 RUN add-apt-repository -y ppa:ondrej/php5
 RUN add-apt-repository -y ppa:nginx/stable
 RUN add-apt-repository -y ppa:ondrej/mysql-5.6
-
-#sudo add-apt-repository 'deb http://ppa.launchpad.net/ondrej/mysql-5.6/ubuntu precise main'
 RUN apt-get update
 
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
@@ -77,18 +75,18 @@ RUN git clone git://github.com/CodistoConnect/CodistoConnect.git
 ENV WORKSPACE $CODISTOCONNECT_WORKSPACE
 
 
-#required for mysql cli binary
-RUN add-apt-repository -y ppa:ondrej/mysql-5.6
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6
+#Install mysql
 
+RUN debconf-set-selections <<< 'mysql-server mysql-server/root_password password magento'
+RUN debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password magento'
 
-#TODO think about the following it can't complete the install until the linked container mysql is running
-ENV MAGENTO_DB_HOST=mysql
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
+
+#ENV MAGENTO_DB_HOST=mysql
 #MAGENTO_DB_PORT
-ENV MAGENTO_DB_USER=magento
+ENV MAGENTO_DB_USER=root
 ENV MAGENTO_DB_PASS=magento
-ENV MAGENTO_DB_NAME=magento
+#ENV MAGENTO_DB_NAME=magento
 
 
 RUN curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
