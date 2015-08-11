@@ -54,19 +54,14 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 #TODO create docker tags for different magento versions ... lets get this working first
 ENV MAGENTO_VERSION magento-ce-1.9.0.1
 
-
 #No prompt on initial clone
 RUN ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
 
 ENV CODISTOCONNECT_WORKSPACE=$HOME/Codisto
-
 RUN mkdir -p $CODISTOCONNECT_WORKSPACE
 
-RUN echo "Workspace is $CODISTOCONNECT_WORKSPACE"
-
-
 #Set the workspace environment variable that MageTestStand setup.sh script will use
-ENV WORKSPACE $CODISTOCONNECT_WORKSPACE
+ENV WORKSPACE $HOME/Codisto
 ENV MAGENTO_DB_USER=root
 ENV MAGENTO_DB_PASS=magento
 
@@ -80,22 +75,40 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client
 
 CMD "sh" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 
-#Each run command is issued in a separate container so I need to start the mysql server and setup the db in one run transaction
-ADD MageTestStand/setup.sh /tmp/setup.sh
-RUN chmod +x /tmp/setup.sh
-RUN /tmp/setup.sh
-
-
-
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y openssh-server
+
+RUN mkdir "$CODISTOCONNECT_WORKSPACE/MageTestStand"
+ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
+
+RUN mkdir "/Scripts"
+ENV SCRIPTS "/Scripts"
+
+#Each run command is issued in a separate container so I need to start the mysql server and setup the db in one run transaction
+ADD MageTestStand/setup.sh $SCRIPTS/setup.sh
+RUN chmod +x $SCRIPTS/setup.sh
+
+ADD MageTestStand/install.sh $SCRIPTS/install.sh
+RUN chmod +x $SCRIPTS/install.sh
+
+
+#TODO change this to master when bm_travis_ci branch is merged
+#Get codisto plugin (image layer fs here)
+RUN git clone --progress --verbose --branch bm_travis_ci git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE > /dev/null
+
+ENV SKIP_CLEANUP 1
+
+#Get MageTestStand (image fs layer here)
+RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}" \
+	&& cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
+
+#Update composer to latest
+RUN $BUILDENV/tools/composer.phar self-update
+
+
+#deploy db etc
+RUN $SCRIPTS/setup.sh
+
 
 #When container is created start ssh daemon
 CMD service start sshd
 EXPOSE 22
-
-
-#TODO Even though it goes against docker philospohy I think I'll just package up mysql server inside this container too
-#it allows me to completely install everything at BUILD time without relying on running mysql container
-#yes people could use docker-composer , start both up and stuff gets installed but then they have to either commit after the install or wait for install each time a container is spun up.
-
-#having it in a single container also enables docker run without relying on composer to help orchestrate everything or specifying links yourself at run

@@ -12,14 +12,6 @@ function cleanup {
 }
 
 
-function codistoPlugin {
-	cd $CODISTOCONNECT_WORKSPACE
-	rm -rf CodistoConnect
-
-	#TODO change this to master when ci stuff is merged
-	git clone git://github.com/CodistoConnect/CodistoConnect.git -b bm_travis_ci
-}
-
 trap cleanup EXIT
 
 # check if this is a travis environment
@@ -34,24 +26,17 @@ fi
 
 #start mysql temporarily to import magento structures, sample data and so on
 /bin/bash -c "/usr/bin/mysqld_safe &"
-
-#clone down Codisto plugin
-codistoPlugin
-
-BUILDENV=`mktemp -d /tmp/mageteststand.XXXXXXXX`
+sleep 5
 
 echo "Using build directory ${BUILDENV}"
 
-git clone https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}"
-cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
+cd $BUILDENV
+$SCRIPTS/install.sh
 
-#replace install.sh sample data line to indicate that sample data is required -- get stuff working before we bother with sample data
-#sed -i -e s/--installSampleData=no/--installSampleData=yes/ "${BUILDENV}/install.sh"
-
-${BUILDENV}/install.sh
 if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
-cd ${BUILDENV}/htdocs
-${BUILDENV}/bin/phpunit --colors -d display_errors=1
+#run unit tests
+#cd ${BUILDENV}/htdocs
+#${BUILDENV}/bin/phpunit --colors -d display_errors=1
