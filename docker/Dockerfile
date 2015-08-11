@@ -11,26 +11,26 @@ RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 
 CMD ["/sbin/my_init"]
 
-# Nginx-PHP Installation
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y vim curl wget build-essential python-software-properties debconf-utils
-
 RUN add-apt-repository -y ppa:ondrej/php5
 RUN add-apt-repository -y ppa:nginx/stable
 RUN add-apt-repository -y ppa:ondrej/mysql-5.6
 RUN apt-get update
 
+
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
-		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy
+		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx
 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes git
+ENV MAGENTO_DB_USER=root
+ENV MAGENTO_DB_PASS=magento
 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get upgrade  -y --force-yes
+
+RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password password $MAGENTO_DB_PASS"'
+RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $MAGENTO_DB_PASS"'
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
 
 RUN sed -i "s/;date.timezone =.*/date.timezone = UTC/" /etc/php5/fpm/php.ini
 RUN sed -i "s/;date.timezone =.*/date.timezone = UTC/" /etc/php5/cli/php.ini
-
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y nginx
 
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php5/fpm/php-fpm.conf
@@ -45,11 +45,7 @@ RUN mkdir           /etc/service/phpfpm
 ADD build/phpfpm.sh /etc/service/phpfpm/run
 RUN chmod +x        /etc/service/phpfpm/run
 
-EXPOSE 80
-# End Nginx-PHP
-
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 
 #TODO create docker tags for different magento versions ... lets get this working first
 ENV MAGENTO_VERSION magento-ce-1.9.0.1
@@ -61,21 +57,10 @@ ENV CODISTOCONNECT_WORKSPACE=$HOME/Codisto
 RUN mkdir -p $CODISTOCONNECT_WORKSPACE
 
 #Set the workspace environment variable that MageTestStand setup.sh script will use
-ENV WORKSPACE $HOME/Codisto
-ENV MAGENTO_DB_USER=root
-ENV MAGENTO_DB_PASS=magento
+ENV WORKSPACE $HOME/Codisto/CodistoConnect
 
-#Install mysql
-
-RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password password $MAGENTO_DB_PASS"'
-RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $MAGENTO_DB_PASS"'
-
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
 
 CMD "sh" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
-
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y openssh-server
 
 RUN mkdir "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
@@ -93,7 +78,7 @@ RUN chmod +x $SCRIPTS/install.sh
 
 #TODO change this to master when bm_travis_ci branch is merged
 #Get codisto plugin (image layer fs here)
-RUN git clone --progress --verbose --branch bm_travis_ci git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE > /dev/null
+RUN git clone --progress --verbose --branch bm_travis_ci git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE/CodistoConnect > /dev/null
 
 ENV SKIP_CLEANUP 1
 
@@ -111,4 +96,4 @@ RUN $SCRIPTS/setup.sh
 
 #When container is created start ssh daemon
 CMD service start sshd
-EXPOSE 22
+EXPOSE 22 80

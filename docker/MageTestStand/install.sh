@@ -1,8 +1,13 @@
 #!/bin/bash
 
+#source dir was /scripts which is incorrect
+
 # Get absolute path to main directory
 ABSPATH=$(cd "${0%/*}" 2>/dev/null; echo "${PWD}/${0##*/}")
-SOURCE_DIR=`dirname "${ABSPATH}"`
+SSOURCE_DIR=`dirname "${ABSPATH}"`
+echo "SSOURCE_DIR IS $SSOURCE_DIR"
+
+#echo "BEFORE DOING INSTALL.SH SOURCE_DIR is $SOURCE_DIR"
 
 if [ -z $MAGENTO_DB_HOST ]; then MAGENTO_DB_HOST="localhost"; fi
 if [ -z $MAGENTO_DB_PORT ]; then MAGENTO_DB_PORT="3306"; fi
@@ -27,7 +32,7 @@ echo "    Test DB: ${MAGENTO_DB_NAME}_test"
 echo "    Allow same db: ${MAGENTO_DB_ALLOWSAME}"
 echo
 
-cd ${SOURCE_DIR}
+#cd ${SOURCE_DIR}
 
 if [ ! -f htdocs/app/etc/local.xml ] ; then
 
@@ -50,17 +55,17 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 		sed -i -e s/MAGENTO_DB_NAME/${MAGENTO_DB_NAME}/g .modman/Aoe_TestSetup/app/etc/local.xml.phpunit
 	fi
 
-	$BUILDENV/tools/n98-magerun.phar install \
+	tools/n98-magerun.phar install \
       --dbHost="${MAGENTO_DB_HOST}" --dbUser="${MAGENTO_DB_USER}" --dbPass="${MAGENTO_DB_PASS}" --dbName="${MAGENTO_DB_NAME}" --dbPort="${MAGENTO_DB_PORT}" \
-      --installSampleData=yes \
+      --installSampleData=no \
       --useDefaultConfigParams=yes \
       --magentoVersionByName="${MAGENTO_VERSION}" \
-      --installationFolder="${SOURCE_DIR}/htdocs" \
+      --installationFolder="${BUILDENV}/htdocs" \
       --baseUrl="http://magento.local/" || { echo "Installing Magento failed"; exit 1; }
 fi
 
 #link codistoconnect and magento
-$BUILDENV/tools/modman deploy-all --force
+tools/modman deploy-all --force
 
 #Install ecomdev EcomDev_PHPUnit
 #RUN if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install; fi
