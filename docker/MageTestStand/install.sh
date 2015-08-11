@@ -67,10 +67,9 @@ fi
 #link codistoconnect and magento
 tools/modman deploy-all --force
 
-#Install ecomdev EcomDev_PHPUnit
-#RUN if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install; fi
-#Install ecomdev EcomDev_PHPUnit
-if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install; fi
+#https://github.com/EcomDev/EcomDev_PHPUnit.git
+
+if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install --no-interaction ; fi
 
 
 #set some magento config related stuff
