@@ -14,7 +14,10 @@ function cleanup {
 
 function codistoPlugin {
 	cd $CODISTOCONNECT_WORKSPACE
-	git clone git://github.com/CodistoConnect/CodistoConnect.git
+	rm -rf CodistoConnect
+
+	#TODO change this to master when ci stuff is merged
+	git clone git://github.com/CodistoConnect/CodistoConnect.git -b bm_travis_ci
 }
 
 trap cleanup EXIT
@@ -42,8 +45,8 @@ echo "Using build directory ${BUILDENV}"
 git clone https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}"
 cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
 
-#replace install.sh sample data line to indicate that sample data is required
-sed -i -e s/--installSampleData=no/--installSampleData=yes/ "${BUILDENV}/install.sh"
+#replace install.sh sample data line to indicate that sample data is required -- get stuff working before we bother with sample data
+#sed -i -e s/--installSampleData=no/--installSampleData=yes/ "${BUILDENV}/install.sh"
 
 ${BUILDENV}/install.sh
 if [ -d "${WORKSPACE}/vendor" ] ; then

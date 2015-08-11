@@ -78,16 +78,19 @@ RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password
 RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
 
+CMD "sh" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
+
 #Each run command is issued in a separate container so I need to start the mysql server and setup the db in one run transaction
 ADD MageTestStand/setup.sh /tmp/setup.sh
 RUN chmod +x /tmp/setup.sh
-
 RUN /tmp/setup.sh
 
-#RUN curl -sSL https://raw.githubusercontent.com/CodistoConnect/CodistoConnectQA/bm_docker_compose/docker/MageTestStand/setup.sh | bash
+
+
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y openssh-server
 
 #When container is created start ssh daemon
-CMD /usr/sbin/sshd
+CMD service start sshd
 EXPOSE 22
 
 
