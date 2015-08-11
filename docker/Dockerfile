@@ -64,32 +64,31 @@ RUN mkdir -p $CODISTOCONNECT_WORKSPACE
 
 RUN echo "Workspace is $CODISTOCONNECT_WORKSPACE"
 
-RUN cd $CODISTOCONNECT_WORKSPACE
-
-
-# Checkout Codisto Connect module
-RUN git clone git://github.com/CodistoConnect/CodistoConnect.git
-
 
 #Set the workspace environment variable that MageTestStand setup.sh script will use
 ENV WORKSPACE $CODISTOCONNECT_WORKSPACE
-
+ENV MAGENTO_DB_USER=root
+ENV MAGENTO_DB_PASS=magento
 
 #Install mysql
 
-RUN debconf-set-selections <<< 'mysql-server mysql-server/root_password password magento'
-RUN debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password magento'
+RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password password $MAGENTO_DB_PASS"'
+RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $MAGENTO_DB_PASS"'
 
+RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
 
-#ENV MAGENTO_DB_HOST=mysql
-#MAGENTO_DB_PORT
-ENV MAGENTO_DB_USER=root
-ENV MAGENTO_DB_PASS=magento
-#ENV MAGENTO_DB_NAME=magento
+#Each run command is issued in a separate container so I need to start the mysql server and setup the db in one run transaction
+ADD MageTestStand/setup.sh /tmp/setup.sh
+RUN chmod +x /tmp/setup.sh
 
+RUN /tmp/setup.sh
 
-RUN curl -sSL https://raw.githubusercontent.com/AOEpeople/MageTestStand/master/setup.sh | bash
+#RUN curl -sSL https://raw.githubusercontent.com/CodistoConnect/CodistoConnectQA/bm_docker_compose/docker/MageTestStand/setup.sh | bash
+
+#When container is created start ssh daemon
+CMD /usr/sbin/sshd
+EXPOSE 22
 
 
 #TODO Even though it goes against docker philospohy I think I'll just package up mysql server inside this container too
