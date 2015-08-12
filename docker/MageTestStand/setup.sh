@@ -24,7 +24,7 @@ if [ -z $WORKSPACE ] ; then
 	exit
 fi
 
-#start mysql temporarily to import magento structures, sample data and so on
+#Start mysql temporarily to import magento structures, sample data and so on
 /bin/bash -c "/usr/bin/mysqld_safe &"
 sleep 5
 
