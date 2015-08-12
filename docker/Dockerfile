@@ -38,6 +38,10 @@ RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php5/fpm/php.ini
 
 RUN mkdir -p        /var/www
 ADD build/default   /etc/nginx/sites-available/default
+
+
+#Why is all the following needed when there are by default
+
 RUN mkdir           /etc/service/nginx
 ADD build/nginx.sh  /etc/service/nginx/run
 RUN chmod +x        /etc/service/nginx/run
@@ -90,10 +94,15 @@ RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.gi
 RUN $BUILDENV/tools/composer.phar self-update
 
 
-#deploy db etc
+#Deploy db etc
 RUN $SCRIPTS/setup.sh
 
+RUN rm -R /var/www/html && ln -s /root/Codisto/MageTestStand/htdocs /var/www/html && chown -R www-data:www-data /var/www/html
 
-#When container is created start ssh daemon
-CMD service start sshd
+RUN add-apt-repository -y ppa:supervisord-dev/ppa
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes supervisor
+COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 EXPOSE 22 80
+CMD ["/usr/bin/supervisord"]
