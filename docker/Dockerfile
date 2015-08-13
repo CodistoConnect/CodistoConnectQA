@@ -79,6 +79,8 @@ ENV SKIP_CLEANUP 1
 RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}" \
 	&& cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
 
+ADD MageTestStand/.n98-magerun.yaml $BUILDENV/MageTestStand/.n98-magerun.yaml
+
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
 
