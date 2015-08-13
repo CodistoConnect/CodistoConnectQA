@@ -1,61 +1,94 @@
 server {
     listen 80;
 
-    ## SSL directives might go here
-    ## see http://www.howtoforge.com/how_to_set_up_ssl_vhosts_under_nginx_plus_sni_support_ubuntu_11.04_debian_squeeze
-    ## if you want to enable SSL for this vhost
+    server_name magentodev.local;
 
-    server_name localhost;
-    root /var/www;
+    root /var/www/magento;
+    disable_symlinks off;
 
-    ## rewrites example.com to www.example.com
-    #if ($http_host != "website.com") {
-    #    rewrite ^ $scheme://website.com$request_uri permanent;
-    #}
-
-    location / {
-        index index.html index.php; ## Allow a static html file to be shown first
-        try_files $uri $uri/ @handler; ## If missing pass the URI to Magento's front handler
-        expires 30d; ## Assume all files are cachable
+    ##
+    # dont log robots.txt requests
+    ##
+    location /robots.txt {
+        allow all;
+        log_not_found off;
+        access_log off;
     }
-
+ 
     ## These locations would be hidden by .htaccess normally
-    location /app/                { deny all; }
-    location /includes/           { deny all; }
-    location /lib/                { deny all; }
-    location /media/downloadable/ { deny all; }
-    location /pkginfo/            { deny all; }
-    location /report/config.xml   { deny all; }
-    location /var/                { deny all; }
-    location /var/export/ { ## Allow admins only to view export folder
-        auth_basic           "Restricted"; ## Message shown in login window
-        auth_basic_user_file /var/www/website.com/.htpasswd; ## See /etc/nginx/htpassword
-        autoindex            on;
-    }
-
-    ## Disable .htaccess and other hidden files
+    location ^~ /app/                { deny all; }
+    location ^~ /includes/           { deny all; }
+    location ^~ /lib/                { deny all; }
+    location ^~ /media/downloadable/ { deny all; }
+    location ^~ /pkginfo/            { deny all; }
+    location ^~ /report/config.xml   { deny all; }
+    location ^~ /var/                { deny all; }
+    location /var/export/            { deny all; }
+        # deny htaccess files
     location ~ /\. {
-        deny all;
+        deny  all;
         access_log off;
         log_not_found off;
     }
 
+    ##
+    # Rewrite for versioned CSS+JS via filemtime
+    ##
+    location ~* ^.+\.(css|js)$ {
+        rewrite ^(.+)\.(\d+)\.(css|js)$ $1.$3 last;
+        expires 31536000s;
+        access_log off;
+        log_not_found off;
+        add_header Pragma public;
+        add_header Cache-Control "max-age=31536000, public";
+    }
+
+    ##
+    # Aggressive caching for static files
+    # If you alter static files often, please use 
+    # add_header Cache-Control "max-age=31536000, public, must-revalidate, proxy-revalidate";
+    ##
+    location ~* \.(asf|asx|wax|wmv|wmx|avi|bmp|class|divx|doc|docx|eot|exe|gif|gz|gzip|ico|jpg|jpeg|jpe|mdb|mid|midi|mov|qt|mp3|m4a|mp4|m4v|mpeg|mpg|mpe|mpp|odb|odc|odf|odg|odp|ods|odt|ogg|ogv|otf|pdf|png|pot|pps|ppt|pptx|ra|ram|svg|svgz|swf|tar|t?gz|tif|tiff|ttf|wav|webm|wma|woff|wri|xla|xls|xlsx|xlt|xlw|zip)$ {
+        expires 31536000s;
+        access_log off;
+        log_not_found off;
+        add_header Pragma public;
+        add_header Cache-Control "max-age=31536000, public";
+    }
+
+    # error pages
+    error_page  404              /404.html;
+    location = /404.html {
+        root   /usr/share/nginx/html;
+    }
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    location / {
+        try_files /maintenance.html $uri $uri/ @handler; ## If missing pass the URI to Magento's front handler
+        expires 30d; ## Assume all files are cachable
+    }
     location @handler { ## Magento uses a common front handler
         rewrite / /index.php;
     }
-
-    location ~ \.php/ { ## Forward paths like /js/index.php/x.js to relevant handler
-        rewrite ^(.*\.php)/ $1 last;
+    location ~ .php/ { ## Forward paths like /js/index.php/x.js to relevant handler
+        rewrite ^(.*.php)/ $1 last;
     }
-
-    location ~ \.php$ { ## Execute PHP scripts
-        if (!-e $request_filename) { rewrite / /index.php last; } ## Catch 404s that try_files miss
-        expires        off; ## Do not cache dynamic content
-        #fastcgi_pass   127.0.0.1:9000;
-        fastcgi_pass unix:/var/run/php5-fpm.sock; #use unix socket
+    
+    ##
+    # pass the PHP scripts to FastCGI server listening at unix:/var/run/php5-fpm.sock
+    ##
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_index  index.php;
         fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
-        fastcgi_param  MAGE_RUN_CODE default; ## Store code is defined in administration > Configuration > Manage Stores
         fastcgi_param  MAGE_RUN_TYPE store;
-        include        fastcgi_params; ## See /etc/nginx/fastcgi_params
-    }
+   }
+
+    rewrite ^/minify/([0-9]+)(/.*.(js|css))$ /lib/minify/m.php?f=$2&d=$1 last;
+    rewrite ^/skin/m/([0-9]+)(/.*.(js|css))$ /lib/minify/m.php?f=$2&d=$1 last;
+
 }

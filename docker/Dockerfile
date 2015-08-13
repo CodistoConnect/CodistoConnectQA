@@ -86,16 +86,15 @@ RUN $BUILDENV/tools/composer.phar self-update
 RUN $SCRIPTS/setup.sh
 
 #Set up nginx related configuration
-#ADD build/default   /etc/nginx/sites-available/default
 
 #Add our Magento configuration
 ADD build/nginx/magento	/etc/nginx/sites-available/magento
 
 #Enable our Magento configuration, make sure /var/www (server root) is sym linked to magento directory
 RUN ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
-	&& rm -R /var/www \
-	&& ln -s $BUILDENV/htdocs /var/www \
-	&& chown -R www-data:www-data /var/www
+	&& ln -sf $BUILDENV/htdocs /var/www/magento \
+	&& chown -R root:www-data /var/www/magento \
+	&& chmod 750 -R /var/www/magento
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

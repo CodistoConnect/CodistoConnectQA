@@ -24,9 +24,10 @@ if [ -z $WORKSPACE ] ; then
 	exit
 fi
 
-#Start mysql temporarily to import magento structures, sample data and so on
-/bin/bash -c "/usr/bin/mysqld_safe &"
-sleep 5
+#Start mysql temporarily to import magento structures, sample data and so on use script from /init.d as it makes sure mysql has started correctly
+service mysql start
+#/bin/bash -c "/usr/bin/mysqld_safe &"
+#sleep 5
 
 echo "Using build directory ${BUILDENV}"
 

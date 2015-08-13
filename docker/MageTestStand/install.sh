@@ -3,9 +3,9 @@
 #source dir was /scripts which is incorrect
 
 # Get absolute path to main directory
-ABSPATH=$(cd "${0%/*}" 2>/dev/null; echo "${PWD}/${0##*/}")
-SSOURCE_DIR=`dirname "${ABSPATH}"`
-echo "SSOURCE_DIR IS $SSOURCE_DIR"
+#ABSPATH=$(cd "${0%/*}" 2>/dev/null; echo "${PWD}/${0##*/}")
+#SSOURCE_DIR=`dirname "${ABSPATH}"`
+#echo "SSOURCE_DIR IS $SSOURCE_DIR"
 
 #echo "BEFORE DOING INSTALL.SH SOURCE_DIR is $SOURCE_DIR"
 
@@ -61,16 +61,17 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
       --useDefaultConfigParams=yes \
       --magentoVersionByName="${MAGENTO_VERSION}" \
       --installationFolder="${BUILDENV}/htdocs" \
-      --baseUrl="http://magento.local/" || { echo "Installing Magento failed"; exit 1; }
+      --baseUrl="http://magentodev.local/" || { echo "Installing Magento failed"; exit 1; }
 fi
 
-#link codistoconnect and magento
+#Link codistoconnect and magento
 tools/modman deploy-all --force
 
-#https://github.com/EcomDev/EcomDev_PHPUnit.git
-
+#Install https://github.com/EcomDev/EcomDev_PHPUnit.git
 if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install --no-interaction ; fi
 
 
-#set some magento config related stuff
+#Set Magento development configuration
 tools/n98-magerun.phar --root-dir=htdocs config:set dev/template/allow_symlink 1
+tools/n98-magerun.phar dev:symlinks --on --global
+tools/n98-magerun.phar dev:log --on --global

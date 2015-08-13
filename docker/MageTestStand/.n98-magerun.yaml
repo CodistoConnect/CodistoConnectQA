@@ -1,0 +1,15 @@
+#Default https://github.com/netz98/n98-magerun/blob/master/config.yaml
+
+#Override for CodistoConnect
+commands:
+  N98\Magento\Command\Installer\InstallCommand:
+    installation:
+      defaults:
+        currency: AUD
+        locale: en_AU
+        timezone: Australia/Sydney
+        admin_username: admin
+        admin_firstname: admin
+        admin_lastname: magento
+        admin_password: magento
+        admin_email: magento@magentodev.local
