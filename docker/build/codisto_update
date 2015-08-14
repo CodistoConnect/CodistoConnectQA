@@ -1,0 +1,5 @@
+#/bin/bash
+cd $HOME/Codisto/CodistoConnect
+git fetch --all --prune
+git checkout master --force
+git pull

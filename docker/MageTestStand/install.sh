@@ -1,20 +1,13 @@
 #!/bin/bash
 
-#source dir was /scripts which is incorrect
-
-# Get absolute path to main directory
-#ABSPATH=$(cd "${0%/*}" 2>/dev/null; echo "${PWD}/${0##*/}")
-#SSOURCE_DIR=`dirname "${ABSPATH}"`
-#echo "SSOURCE_DIR IS $SSOURCE_DIR"
-
-#echo "BEFORE DOING INSTALL.SH SOURCE_DIR is $SOURCE_DIR"
-
 if [ -z $MAGENTO_DB_HOST ]; then MAGENTO_DB_HOST="localhost"; fi
 if [ -z $MAGENTO_DB_PORT ]; then MAGENTO_DB_PORT="3306"; fi
 if [ -z $MAGENTO_DB_USER ]; then MAGENTO_DB_USER="root"; fi
 if [ -z $MAGENTO_DB_PASS ]; then MAGENTO_DB_PASS=""; fi
 if [ -z $MAGENTO_DB_NAME ]; then MAGENTO_DB_NAME="mageteststand"; fi
 if [ -z $MAGENTO_DB_ALLOWSAME ]; then MAGENTO_DB_ALLOWSAME="0"; fi
+if [ -z $MAGENTO_BASEURL ]; then MAGENTO_BASEURL="http://magentodev.local/"; fi
+if [ -z $MAGENTO_SAMPLE_DATA ]; then MAGENTO_SAMPLE_DATA="yes"; fi
 
 echo
 echo "---------------------"
@@ -58,10 +51,10 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 	tools/n98-magerun.phar install \
       --dbHost="${MAGENTO_DB_HOST}" --dbUser="${MAGENTO_DB_USER}" --dbPass="${MAGENTO_DB_PASS}" --dbName="${MAGENTO_DB_NAME}" --dbPort="${MAGENTO_DB_PORT}" \
       --installSampleData=no \
-      --useDefaultConfigParams=no \
+      --useDefaultConfigParams="${MAGENTO_SAMPLE_DATA}" \
       --magentoVersionByName="${MAGENTO_VERSION}" \
       --installationFolder="${BUILDENV}/htdocs" \
-      --baseUrl="http://magentodev.local/" || { echo "Installing Magento failed"; exit 1; }
+      --baseUrl="${MAGENTO_BASEURL}" || { echo "Installing Magento failed"; exit 1; }
 fi
 
 #Link codistoconnect and magento

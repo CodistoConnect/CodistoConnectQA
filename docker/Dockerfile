@@ -22,11 +22,10 @@ RUN add-apt-repository -y ppa:ondrej/php5 \
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
 		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx  supervisor
 
-#Others rsync
-
 #Set default password for mysql and install it
 ENV MAGENTO_DB_USER=root
 ENV MAGENTO_DB_PASS=magento
+
 RUN bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password password $MAGENTO_DB_PASS"' \
 	&& bash -c 'debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $MAGENTO_DB_PASS"'
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes mysql-client-5.6 mysql-server-5.6
@@ -39,12 +38,9 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 RUN sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" /etc/php5/fpm/php-fpm.conf
 RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php5/fpm/php.ini
 
-#RUN mkdir -p        /var/www
-
 #Clean up after install
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-#TODO create docker tags for different magento versions ... lets get this working first
 ENV MAGENTO_VERSION magento-ce-1.9.0.1
 
 #No prompt on initial clones
@@ -61,7 +57,6 @@ RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 RUN mkdir "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 
-
 #Add build scripts
 RUN mkdir "/Scripts"
 ENV SCRIPTS "/Scripts"
@@ -69,9 +64,9 @@ ADD MageTestStand/setup.sh $SCRIPTS/setup.sh
 ADD MageTestStand/install.sh $SCRIPTS/install.sh
 RUN chmod +x $SCRIPTS/setup.sh && chmod +x $SCRIPTS/install.sh
 
-#TODO change this to master when bm_travis_ci branch is merged
+
 #Get codisto plugin
-RUN git clone --progress --verbose --branch bm_travis_ci git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE/CodistoConnect > /dev/null
+RUN git clone --progress --verbose --branch master git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE/CodistoConnect > /dev/null
 
 ENV SKIP_CLEANUP 1
 
@@ -79,7 +74,7 @@ ENV SKIP_CLEANUP 1
 RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}" \
 	&& cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
 
-ADD MageTestStand/.n98-magerun.yaml $BUILDENV/MageTestStand/.n98-magerun.yaml
+ADD MageTestStand/.n98-magerun.yaml $HOME/.n98-magerun.yaml
 
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
@@ -93,13 +88,20 @@ RUN $SCRIPTS/setup.sh
 ADD build/nginx/magento	/etc/nginx/sites-available/magento
 
 #Enable our Magento configuration, make sure /var/www (server root) is sym linked to magento directory
-RUN ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
+RUN rm /etc/nginx/sites-enabled/default \
+	&& ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
 	&& ln -sf $BUILDENV/htdocs /var/www/magento \
 	&& chown -R root:www-data /var/www/magento \
-	&& chmod 750 -R /var/www/magento
+	&& chmod 750 -R /var/www/magento \
+	&& chown -R root:www-data /root \
+	&& chmod 750 -R /root
+
+#Add the plugin updater bash script
+ADD build/codisto_update /usr/bin/codisto_update
+RUN chmod +x /usr/bin/codisto_update
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 22 80
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/bin/codisto_update ; /usr/bin/supervisord"]

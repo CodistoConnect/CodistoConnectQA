@@ -11,5 +11,5 @@ commands:
         admin_username: admin
         admin_firstname: admin
         admin_lastname: magento
-        admin_password: magento
-        admin_email: magento@magentodev.local
+        admin_password: magento123
+        admin_email: test@codisto.com
