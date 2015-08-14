@@ -50,7 +50,7 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 
 	tools/n98-magerun.phar install \
       --dbHost="${MAGENTO_DB_HOST}" --dbUser="${MAGENTO_DB_USER}" --dbPass="${MAGENTO_DB_PASS}" --dbName="${MAGENTO_DB_NAME}" --dbPort="${MAGENTO_DB_PORT}" \
-      --installSampleData=no \
+      --installSampleData="${MAGENTO_SAMPLE_DATA}" \
       --useDefaultConfigParams="${MAGENTO_SAMPLE_DATA}" \
       --magentoVersionByName="${MAGENTO_VERSION}" \
       --installationFolder="${BUILDENV}/htdocs" \
