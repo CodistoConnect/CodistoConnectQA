@@ -51,7 +51,7 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 	tools/n98-magerun.phar install \
       --dbHost="${MAGENTO_DB_HOST}" --dbUser="${MAGENTO_DB_USER}" --dbPass="${MAGENTO_DB_PASS}" --dbName="${MAGENTO_DB_NAME}" --dbPort="${MAGENTO_DB_PORT}" \
       --installSampleData="${MAGENTO_SAMPLE_DATA}" \
-      --useDefaultConfigParams=yes \
+      --useDefaultConfigParams=no \
       --magentoVersionByName="${MAGENTO_VERSION}" \
       --installationFolder="${BUILDENV}/htdocs" \
       --baseUrl="${MAGENTO_BASEURL}" || { echo "Installing Magento failed"; exit 1; }
