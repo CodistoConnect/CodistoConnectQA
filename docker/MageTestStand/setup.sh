@@ -37,6 +37,7 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 fi
 
 #TODO - enable run unit + integration tests on container start if environment variable set
+#This needs to be moved into the Entrypoint
 if [ -z $TESTS ] ; then
 	echo "Tests were not enabled. Deploying container with Magento + Codisto Connect for manual testing / dev"
 else

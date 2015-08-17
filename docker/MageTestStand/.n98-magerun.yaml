@@ -3,6 +3,54 @@
 #Override for CodistoConnect
 commands:
   N98\Magento\Command\Installer\InstallCommand:
+
+
+    magento-packages:
+      - name: magento-ce-1.9.1.1
+        version: 1.9.1.1
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.1.0.zip
+          type: zip
+          shasum: dea604c93fc95334955b739866e0f5500911bb61
+        extra:
+          sample-data: sample-data-1.9.1.0
+
+      - name: magento-ce-1.8.1.0
+        version: 1.8.1.0
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.8.1.0.zip
+          type: zip
+          shasum: f8d01578bf266c82194776793208d164f305349e
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+      - name: magento-ce-1.7.0.2
+        version: 1.7.0.2
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.7.0.2.zip
+          type: zip
+          shasum: c2a08e0cb508b815a9c72db986fab4cd2cd819a7
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+      - name: magento-ce-1.6.2.0
+        version: 1.6.2.0
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.6.2.0.zip
+          type: zip
+          shasum: ed184dc69ee06f655a033ec3573ce195f85ab28a
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+    demo-data-packages:
+      - name: sample-data-1.9.1.0
+        version: 1.9.1.0
+        dist:
+          url: https://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tar.7z
+          type: tar
+          shasum: 8f320c0bf6f0734cc8c7c3b5150a959d647a302c
+
+
     installation:
       defaults:
         currency: AUD

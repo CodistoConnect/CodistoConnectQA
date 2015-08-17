@@ -52,7 +52,7 @@ RUN mkdir -p $CODISTOCONNECT_WORKSPACE
 #Set the workspace environment variable that MageTestStand setup.sh script will use
 ENV WORKSPACE $HOME/Codisto/CodistoConnect
 
-RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
+#RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 
 RUN mkdir "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
@@ -99,9 +99,10 @@ RUN rm /etc/nginx/sites-enabled/default \
 #Add the plugin updater bash script
 ADD build/codisto_update /usr/bin/codisto_update
 RUN chmod +x /usr/bin/codisto_update
+RUN /usr/bin/codisto_update
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 22 80
-CMD ["/usr/bin/codisto_update ; /usr/bin/supervisord"]
+CMD ["/usr/bin/supervisord"]
