@@ -11,16 +11,26 @@ ENV HOME /root
 
 RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 
+#Attempt to update Apt-repos to use AWS ones if running on AWS box
+#export AVAILABILITY_ZONE=`wget -qO- http://instance-data/latest/meta-data/placement/availability-zone`
+#export REGION_ID=${AVAILABILITY_ZONE:0:${#AVAILABILITY_ZONE} - 1}
+
 #Add thirdy party repos and update the system
 RUN add-apt-repository -y ppa:ondrej/php5 \
 	&& add-apt-repository -y ppa:nginx/stable \
 	&& add-apt-repository -y ppa:ondrej/mysql-5.6 \
 	&& add-apt-repository -y ppa:supervisord-dev/ppa \
+	&& add-apt-repository ppa:saiarcot895/myppa \
 	&& apt-get update && apt-get upgrade -y --force-yes
 
 #Install required software
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
-		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx  supervisor
+		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx supervisor apt-fast
+
+#Tweak apt-fast 
+RUN sed -E -i "s/_MAXNUM=([0-9]+)/_MAXNUM=16/" /etc/apt-fast.conf \
+	&& sed -i "s/#MIRRORS=( 'none' )/MIRRORS=( 'us-east-1.ec2.archive.ubuntu.com\/ubuntu,us-east-2.ec2.archive.ubuntu.com\/ubuntu,us-west-1.ec2.archive.ubuntu.com\/ubuntu' )/" /etc/apt-fast.conf
+
 
 #Set default password for mysql and install it
 ENV MAGENTO_DB_USER=root
