@@ -16,13 +16,13 @@ commands:
           sample-data: sample-data-1.9.1.0
 
       - name: magento-ce-1.9.0.1
-          version: 1.9.0.1
-          dist:
-            url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.0.1.zip
-            type: zip
-            shasum: 84b05b8919f4943e21517b6e7f930bf8dc209a75
-          extra:
-            sample-data: sample-data-1.9.1.0
+        version: 1.9.0.1
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.0.1.zip
+          type: zip
+          shasum: 84b05b8919f4943e21517b6e7f930bf8dc209a75
+        extra:
+          sample-data: sample-data-1.9.1.0
 
       - name: magento-ce-1.8.1.0
         version: 1.8.1.0
