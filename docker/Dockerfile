@@ -21,16 +21,20 @@ RUN add-apt-repository -y ppa:ondrej/php5 \
 	&& add-apt-repository -y ppa:ondrej/mysql-5.6 \
 	&& add-apt-repository -y ppa:supervisord-dev/ppa \
 	&& add-apt-repository ppa:saiarcot895/myppa \
-	&& apt-get update && apt-get upgrade -y --force-yes
+	&& apt-get update
 
-#Install required software
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
-		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx supervisor apt-fast
 
-#Tweak apt-fast 
+RUN apt-get install apt-fast -y
+
+#Tweak apt-fast
 RUN sed -E -i "s/_MAXNUM=([0-9]+)/_MAXNUM=16/" /etc/apt-fast.conf \
 	&& sed -i "s/#MIRRORS=( 'none' )/MIRRORS=( 'us-east-1.ec2.archive.ubuntu.com\/ubuntu,us-east-2.ec2.archive.ubuntu.com\/ubuntu,us-west-1.ec2.archive.ubuntu.com\/ubuntu' )/" /etc/apt-fast.conf
 
+#Install required software
+RUN DEBIAN_FRONTEND="noninteractive" apt-fast install -y --force-yes php5-cli php5-fpm php5-mysql php5-pgsql php5-sqlite php5-curl\
+		       php5-gd php5-mcrypt php5-intl php5-imap php5-tidy vim curl wget build-essential python-software-properties debconf-utils git nginx supervisor
+
+RUN apt-fast upgrade -y --force-yes
 
 #Set default password for mysql and install it
 ENV MAGENTO_DB_USER=root
