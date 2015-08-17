@@ -26,8 +26,6 @@ fi
 
 #Start mysql temporarily to import magento structures, sample data and so on use script from /init.d as it makes sure mysql has started correctly
 service mysql start
-#/bin/bash -c "/usr/bin/mysqld_safe &"
-#sleep 5
 
 echo "Using build directory ${BUILDENV}"
 
@@ -38,6 +36,13 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
-#run unit tests
-#cd ${BUILDENV}/htdocs
-#${BUILDENV}/bin/phpunit --colors -d display_errors=1
+#TODO - enable run unit + integration tests on container start if environment variable set
+if [ -z $TESTS ] ; then
+	echo "Tests were not enabled. Deploying container with Magento + Codisto Connect for manual testing / dev"
+else
+	echo "Running tests .."
+	cd ${BUILDENV}/htdocs
+	${BUILDENV}/bin/phpunit --colors -d display_errors=1
+fi
+
+
