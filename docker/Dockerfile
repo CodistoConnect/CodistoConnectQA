@@ -91,7 +91,7 @@ RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.gi
 ADD MageTestStand/.n98-magerun.yaml $HOME/.n98-magerun.yaml
 
 #Update composer to latest
-RUN $BUILDENV/tools/composer.phar self-update
+RUN $BUILDENV/tools/composer.phar self-update &
 
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
