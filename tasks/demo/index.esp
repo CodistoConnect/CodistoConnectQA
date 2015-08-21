@@ -1,33 +1,18 @@
 
 if(Request.ServerVariables.URL == "/demo/bootstrap") {
 
-	var IP = Request.ServerVariables["X-FORWARDED-FOR"];
 
-	var WhiteListedIP = { "127.0.0.1" : true};
+	var F = File.Open("/tasks/demo/instance-tools/bootstrap.sh");
+	var InstallScript = F.Read().split("\\n");
 
-	if("WHITE_LISTED_DEMO_IP" in Application && Application.WHITE_LISTED_DEMO_IP) {
-		Application.WHITE_LISTED_DEMO_IP.split("|").forEach(function(IP){
-			WhiteListedIP[IP] = true;
-		});
-	}
+	Response.Status = 200;
+	Response.ContentType = "text/plain";
+	Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+	Response.Pragma = "no-cache";
+	Response.Expires = 0;
+	Response.Write(InstallScript);
 
-	if(IP in WhiteListedIP) {
 
-		var F = File.Open("/tasks/demo/instance-tools/bootstrap.sh");
-		var InstallScript = F.Read().split("\\n");
-
-		Response.Status = 200;
-		Response.ContentType = "text/plain";
-		Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
-		Response.Pragma = "no-cache";
-		Response.Expires = 0;
-		Response.Write(InstallScript);
-
-	} else {
-
-		Response.Status = 403;
-		Response.End();
-	}
 
 }
 

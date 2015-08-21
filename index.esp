@@ -16,7 +16,28 @@ else if(/^\/linting\//.test(Request.ServerVariables.URL)) {
 }
 else if(/^\/demo\//.test(Request.ServerVariables.URL)) {
 
-	Server.Execute("/tasks/demo/index.esp");
+
+	Server.Require("/include/common.esp");
+
+	if(("WHITE_LISTED_DEMO_IP" in Application) && Application.WHITE_LISTED_DEMO_IP) {
+
+		var isWhiteListed = CheckIPWhitelisted(Request.ServerVariables["X-FORWARDED-FOR"], Application.WHITE_LISTED_DEMO_IP.split("|"));
+
+		if(isWhiteListed) {
+
+			Server.Execute("/tasks/demo/index.esp");
+
+		} else {
+
+			Response.Status = 403;
+
+		}
+
+
+	} else {
+		Response.Status = 403;
+	}
+
 	Response.End();
 }
 
