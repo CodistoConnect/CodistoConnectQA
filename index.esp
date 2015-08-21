@@ -1,28 +1,26 @@
 
-
-var Logger = Server.Import("/include/log.esp");
-
 if(/^\/graph\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Graph URL was requested - " + Request.ServerVariables.URL + "Transferring");
 	Server.Execute("/tasks/graph/index.esp");
 	Response.End();
 }
 else if(/^\/plugin\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Plugin URL was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/plugin/index.esp");
 	Response.End();
 }
 else if(/^\/linting\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Linting URL was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/linting/index.esp");
+	Response.End();
+}
+else if(/^\/demo\//.test(Request.ServerVariables.URL)) {
+
+	Server.Execute("/tasks/demo/index.esp");
 	Response.End();
 }
 
 else {
-	//Logger.Log("ROUTER", "Static Resource was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/static/index.esp");
 	Response.End();
 }
