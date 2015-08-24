@@ -11,6 +11,10 @@ echo ""
 
 cd /home/bitnami/apps/magento/htdocs/
 ./mage uninstall community CodistoConnect
+
+#Delete from core_resource so that the data-install code path will be executed
+mysql -u root -p${MYSQL_ROOT_PASS} --execute="DELETE FROM bitnami_magento.core_resource WHERE code = 'codisto_setup';"
+
 wget -O plugin.tgz https://codisto.com/plugin/getstable
 ./mage install-file plugin.tgz
 rm plugin.tgz

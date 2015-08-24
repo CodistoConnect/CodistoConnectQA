@@ -80,6 +80,8 @@ if [ -n "$MAGENTOADMINPASS" ]; then
 	mysql -u root -p${MYSQL_ROOT_PASS} --execute="UPDATE bitnami_magento.admin_user SET password=CONCAT(MD5('qX$MAGENTOADMINPASS'), ':qX') WHERE username = 'codistouser';"
 fi
 
+
+
 #Clear Magento caches
 rm -rf /home/bitnami/apps/magento/htdocs/var/cache/*
 rm -rf /home/bitnami/apps/magento/htdocs/var/session/*
