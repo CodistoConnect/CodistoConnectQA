@@ -64,7 +64,6 @@ sudo chmod 600 /home/bitnami/.ssh/id_rsa
 #Make apache2 and php-fpm members of codistouser group so that they can access uploaded templates
 sudo usermod -G daemon,codistouser daemon
 
-
 #Update MerchantID and HostKey values for CodistoConnect
 
 if [ -n "$MERCHANTID" ]; then
@@ -80,10 +79,6 @@ if [ -n "$MAGENTOADMINPASS" ]; then
 	#Update Magento admin login
 	mysql -u root -p${MYSQL_ROOT_PASS} --execute="UPDATE bitnami_magento.admin_user SET password=CONCAT(MD5('qX$MAGENTOADMINPASS'), ':qX') WHERE username = 'codistouser';"
 fi
-
-
-#Wipe out any notifications - Its just a demo box
-mysql -u root -p${MYSQL_ROOT_PASS} --execute="DELETE FROM bitnami_magento.adminnotification_inbox;"
 
 #Clear Magento caches
 rm -rf /home/bitnami/apps/magento/htdocs/var/cache/*
