@@ -42,7 +42,9 @@ sudo chown -h -R mysql:daemon /opt/bitnami/mysql
 #Make appropriate directories writable by group too where needed
 sudo chmod -R 770 /opt/bitnami/apache2/var/
 sudo chmod -R 770 /home/bitnami/apps/magento/htdocs/var
+sudo chmod -R 770 /opt/bitnami/apache2/logs/
 sudo chmod -R 770 /opt/bitnami/mysql
+
 
 #Open up the ebay template dir to the all (any sftp access here is chrooted to /home/bitnami/apps/Magento/htdocs
 sudo chmod 777 /home/bitnami/apps/magento/htdocs/app/design/ebay
