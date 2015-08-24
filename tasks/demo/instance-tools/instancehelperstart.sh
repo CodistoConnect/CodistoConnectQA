@@ -16,9 +16,9 @@ SCRIPTLOCATION="/opt/bitnami/scripts/init"
 sudo killall -9 sandringham bondi 1>/dev/null 2>&1
 
 #lock down bondi pool to  bitnami home and run as bitnami user
-sudo -u bitnami env BONDI_APPROOT=/opt/bitnami/scripts/init DEBUG=1 bondi -script instancehelper.esp -listen 6969 -service
+sudo -u bitnami -i BONDI_APPROOT=/opt/bitnami/scripts/init DEBUG=1 bondi -script instancehelper.esp -listen 6969 -service
 
 #start sandringham wrapper over bash script to update DB
-sudo -u bitnami sandringham -instancehelper $SCRIPTLOCATION/fcgiinstancehelper.sh \"{merchantid} {hostkey} {magentoadminpass}\" -listen 127.0.0.1 6970 -service
+sudo -u bitnami -i sandringham -instancehelper $SCRIPTLOCATION/fcgiinstancehelper.sh \"{merchantid} {hostkey} {magentoadminpass}\" -listen 127.0.0.1 6970 -service
 
 echo "Instance helper started!"

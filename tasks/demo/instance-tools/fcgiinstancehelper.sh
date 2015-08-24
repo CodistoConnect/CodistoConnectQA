@@ -9,7 +9,6 @@ MAGENTOADMINPASS=$3
 #NOTES
 # - sshd's strict ownership/permissions requirements dictate that every directory in the chroot path must be owned by root and only writable by the owner (root).
 # - Mirrors for apt-fast are set to MIRRORS=( 'us-east-1.ec2.archive.ubuntu.com/ubuntu,us-east-2.ec2.archive.ubuntu.com/ubuntu,us-west-1.ec2.archive.ubuntu.com/ubuntu' )
-# - MYSQL_ROOT_PASS is an environment variable set in /etc/environment
 
 logger -s "Updating Merchant state - inside FasgtCGI Helper bash script"
 
