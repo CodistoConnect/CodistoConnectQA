@@ -13,11 +13,13 @@ echo ""
 
 
 cd /home/bitnami/apps/magento/htdocs/
-./mage uninstall community CodistoConnect
-
-rm -R /home/bitnami/apps/magento/htdocs/app/design/
 
 mysql -u root -p${MYSQL_ROOT_PASS} --execute="DELETE FROM bitnami_magento.core_resource WHERE code = 'codisto_setup';"
+
+./mage uninstall community CodistoConnect
+
+#rm -R /home/bitnami/apps/magento/htdocs/app/design/
+
 
 wget -O plugin.tgz https://codisto.com/plugin/getstable
 ./mage install-file plugin.tgz
