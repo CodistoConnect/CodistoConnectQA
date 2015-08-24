@@ -17,9 +17,10 @@ InstallScript(){
 
 	rm -f "${INIT_DIR}"/"${script}"
 	wget -O "${INIT_DIR}"/"${script}" https://raw.githubusercontent.com/CodistoConnect/CodistoConnectQA/bm_perms/tasks/demo/instance-tools/"${script}"
-	sudo chown root:bitnami "${INIT_DIR}"/"${script}"
 
+	sudo chown root:bitnami "${INIT_DIR}"/"${script}"
 	chmod 750 "${INIT_DIR}"/"${script}"
+
 	if [ ${extension} = "sh" ]; then
 		"${INIT_DIR}"/"${script}"
 	fi

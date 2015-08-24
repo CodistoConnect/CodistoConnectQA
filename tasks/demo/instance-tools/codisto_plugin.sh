@@ -15,9 +15,11 @@ wget -O plugin.tgz https://codisto.com/plugin/getstable
 ./mage install-file plugin.tgz
 rm plugin.tgz
 
-#this is no longer correct as the complete path to the chroot location needs to be owned by root and only writable by root
-#sudo chown -R bitnami:daemon /home/bitnami/apps/magento/htdocs/app/code/community/Codisto
-#sudo chown -R bitnami:daemon /home/bitnami/apps/magento/htdocs/app/etc/modules/Codisto*
+sudo chown -R root:daemon /home/bitnami/apps/magento/htdocs/app/code/community/Codisto
+sudo chown -R root:daemon /home/bitnami/apps/magento/htdocs/app/etc/modules/Codisto*
+
+sudo chmod -R 750 /home/bitnami/apps/magento/htdocs/app/code/community/Codisto
+sudo chmod -R 750 /home/bitnami/apps/magento/htdocs/app/etc/modules/Codisto_Sync.xml
 
 echo "[`date`] Finished installing Codisto Magento Plugin" >> /home/bitnami/pluginlog.txt
 
