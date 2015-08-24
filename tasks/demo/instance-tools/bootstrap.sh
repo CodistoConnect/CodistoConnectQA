@@ -22,7 +22,7 @@ InstallScript(){
 	chmod 750 "${INIT_DIR}"/"${script}"
 
 	if [ ${extension} = "sh" ]; then
-		"${INIT_DIR}"/"${script}"
+		sudo -u bitnami -i "${INIT_DIR}"/"${script}"
 	fi
 
 }
