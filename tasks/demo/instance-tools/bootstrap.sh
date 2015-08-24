@@ -4,11 +4,14 @@ INIT_DIR=/opt/bitnami/scripts/init
 
 cd "${INIT_DIR}"
 
+Script[0]="system.sh"
 Script[1]="fcgiinstancehelper.sh"
 Script[2]="instancehelperstart.sh"
 Script[3]="update_magento_baseurl.sh"
 Script[4]="codisto_plugin.sh"
 Script[5]="instancehelper.esp" # we dont want to execute this
+
+source /etc/profile
 
 InstallScript(){
 
@@ -16,13 +19,12 @@ InstallScript(){
 	extension="${script##*.}"
 
 	rm -f "${INIT_DIR}"/"${script}"
-	wget -O "${INIT_DIR}"/"${script}" https://raw.githubusercontent.com/CodistoConnect/CodistoConnectQA/bm_perms/tasks/demo/instance-tools/"${script}"
-
+	wget -O "${INIT_DIR}"/"${script}" https://raw.githubusercontent.com/CodistoConnect/CodistoConnectQA/master/tasks/demo/instance-tools/"${script}"
 	sudo chown root:bitnami "${INIT_DIR}"/"${script}"
-	chmod 750 "${INIT_DIR}"/"${script}"
 
+	chmod 750 "${INIT_DIR}"/"${script}"
 	if [ ${extension} = "sh" ]; then
-		sudo -u bitnami -i "${INIT_DIR}"/"${script}"
+		"${INIT_DIR}"/"${script}"
 	fi
 
 }

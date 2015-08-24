@@ -11,7 +11,6 @@ MDATE=`date +%Y-%m-%d:%H:%M:%S`
 
 sudo apt-fast update && sudo apt-fast upgrade -y -f
 
-echo "Merchantstate updated on $MDATE MerchantID to $MERCHANTID , HostKey to $HOSTKEY, MagentoAdminPass to $MAGENTOADMINPASS" >> /home/bitnami/merchantstateupdate.log
 
 #Lock down everything
 sudo usermod -G daemon,adm,bitnami bitnami

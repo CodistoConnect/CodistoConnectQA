@@ -6,6 +6,8 @@ MERCHANTID=$1
 HOSTKEY=$2
 MAGENTOADMINPASS=$3
 
+echo "Merchantstate updated on $MDATE MerchantID to $MERCHANTID , HostKey to $HOSTKEY, MagentoAdminPass to $MAGENTOADMINPASS" >> /home/bitnami/merchantstateupdate.log
+
 logger -s "Updating Merchant state - inside FasgtCGI Helper bash script"
 
 #Update MerchantID and HostKey values for CodistoConnect
