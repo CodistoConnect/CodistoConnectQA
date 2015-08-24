@@ -1,0 +1,18 @@
+
+if(Request.ServerVariables.URL == "/demo/bootstrap") {
+
+
+	var F = File.Open("/tasks/demo/instance-tools/bootstrap.sh");
+	var InstallScript = F.Read().split("\\n");
+
+	Response.Status = 200;
+	Response.ContentType = "text/plain";
+	Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+	Response.Pragma = "no-cache";
+	Response.Expires = 0;
+	Response.Write(InstallScript);
+
+
+
+}
+

@@ -256,7 +256,7 @@ Request.IsSecure = function() {
 		return true;
 
 	return false;
-}
+};
 
 Response.Redirect = function(url, status)
 {
@@ -278,9 +278,10 @@ Response.Redirect = function(url, status)
 	Response.Status = (status == undefined || status == null || /^\s$/i.test(status)) ? "303 See Other" : status;
 	Response.Headers.Location = url;
 	Response.End();	
-}
+};
 
 
+//Checks that a url is a Magento admin url
 function CheckURL(url)
 {
 	if(!/:\/\//.test(url))
@@ -316,4 +317,25 @@ function CheckURL(url)
 	{
 		return 404;
 	}
+}
+
+function CheckIPWhitelisted(IP, Range) {
+
+	if(IP && Range) {
+
+		if(!Array.isArray(Range))
+			Range = [Range];
+
+		var WhiteListedIP = { "127.0.0.1" : true};
+
+		Range.forEach(function(IP){
+			WhiteListedIP[IP] = true;
+		});
+
+		return IP in WhiteListedIP;
+
+	} else {
+		throw "Invalid arguments";
+	}
+
 }
