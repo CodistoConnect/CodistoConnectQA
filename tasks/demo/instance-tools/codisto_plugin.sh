@@ -9,7 +9,7 @@ echo "#                                                                       #"
 echo "#########################################################################"
 echo ""
 
-source /etc/profile
+/bin/bash -c "source /etc/profile"
 
 
 cd /home/bitnami/apps/magento/htdocs/
@@ -19,7 +19,6 @@ cd /home/bitnami/apps/magento/htdocs/
 logger -s ${MYSQL_ROOT_PASS}
 
 env
-
 
 mysql -u root -p${MYSQL_ROOT_PASS} --execute="DELETE FROM bitnami_magento.core_resource WHERE code = 'codisto_setup';"
 

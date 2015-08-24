@@ -14,7 +14,7 @@ logger -s "Updating Merchant state - inside FasgtCGI Helper bash script"
 
 MDATE=`date +%Y-%m-%d:%H:%M:%S`
 
-source /etc/profile
+/bin/bash -c "source /etc/profile"
 
 sudo apt-fast update && sudo apt-fast upgrade -y -f
 
