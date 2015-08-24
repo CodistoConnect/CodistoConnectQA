@@ -15,7 +15,7 @@ echo ""
 cd /home/bitnami/apps/magento/htdocs/
 ./mage uninstall community CodistoConnect
 
-rm /home/bitnami/apps/magento/htdocs/app/design/
+rm -R /home/bitnami/apps/magento/htdocs/app/design/
 
 mysql -u root -p${MYSQL_ROOT_PASS} --execute="DELETE FROM bitnami_magento.core_resource WHERE code = 'codisto_setup';"
 
