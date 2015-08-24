@@ -9,7 +9,7 @@ MAGENTOADMINPASS=$3
 #NOTES
 # - sshd's strict ownership/permissions requirements dictate that every directory in the chroot path must be owned by root and only writable by the owner (root).
 # - Mirrors for apt-fast are set to MIRRORS=( 'us-east-1.ec2.archive.ubuntu.com/ubuntu,us-east-2.ec2.archive.ubuntu.com/ubuntu,us-west-1.ec2.archive.ubuntu.com/ubuntu' )
-# - MYSQL_ROOT_PASS is an environment variable set in /etc/profile
+# - MYSQL_ROOT_PASS is an environment variable set in /etc/environment
 
 logger -s "Updating Merchant state - inside FasgtCGI Helper bash script"
 
@@ -18,8 +18,6 @@ MDATE=`date +%Y-%m-%d:%H:%M:%S`
 source /etc/profile
 
 sudo apt-fast update && sudo apt-fast upgrade -y -f
-
-
 
 echo "Merchantstate updated on $MDATE MerchantID to $MERCHANTID , HostKey to $HOSTKEY, MagentoAdminPass to $MAGENTOADMINPASS" >> /home/bitnami/merchantstateupdate.log
 
@@ -79,8 +77,6 @@ if [ -n "$HOSTKEY" ]; then
 fi
 
 if [ -n "$MAGENTOADMINPASS" ]; then
-
-	#THESE NEED TO BE CLEANED UP so it doesn't show root password
 
 	#Update Magento admin login
 	mysql -u root -p${MYSQL_ROOT_PASS} --execute="UPDATE bitnami_magento.admin_user SET password=CONCAT(MD5('qX$MAGENTOADMINPASS'), ':qX') WHERE username = 'codistouser';"

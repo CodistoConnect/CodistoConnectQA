@@ -2,50 +2,85 @@
 
 var DEBUG = Application.DEBUG || false;
 
-Response.Status = 403;
+function CheckIPWhitelisted(IP, Range) {
 
-//TODO lock down via IP
-if("HTTP_X_BONDI_CODISTO" in Request.ServerVariables && Request.ServerVariables.HTTP_X_BONDI_CODISTO) {
+	if(IP && Range) {
 
-	if(DEBUG)
-		Debug.LogInfo("Request IS OK - Header present\n");
+		if(!Array.isArray(Range))
+			Range = [Range];
 
-	if(Request.ServerVariables.REQUEST_METHOD == "PUT"){
+		var WhiteListedIP = { "127.0.0.1" : true};
 
-		var Decoded = decodeURIComponent(Request.ServerVariables.HTTP_X_BONDI_CODISTO);
+		Range.forEach(function(IP){
+			WhiteListedIP[IP] = true;
+		});
 
-		var Dte = new Date(Decoded);
-		var Seconds = Math.abs(Dte - new Date()) / 1000;
-		if(DEBUG)
-			Debug.LogInfo("Seconds header diff is " + Seconds + "\n");
+		return IP in WhiteListedIP;
 
-		//arbitrary
-		if(Seconds <= 120) {
-
-			var MerchantID = Request.Form["merchantid"];
-			var HostKey = Request.Form["hostkey"];
-			var MagentoAdminPassword = Request.Form["magentoadminpass"];
-
-			if(MerchantID && HostKey && MagentoAdminPassword) {
-
-				if(DEBUG)
-					Debug.LogInfo("All is good . Sending Fastcgi Request\n");
-
-				var FCGIReq = new FastCGIClient();
-				FCGIReq.Open("POST", "fastcgi://127.0.0.1:6970/instancehelper?merchantid=" + MerchantID + "&hostkey=" + encodeURIComponent(HostKey) + "&magentoadminpass=" + encodeURIComponent(MagentoAdminPassword));
-				FCGIReq.Send();
-
-				if(DEBUG)
-					Debug.LogInfo("FCGI Status is " + FCGIReq.Status);
-
-				Response.Status = FCGIReq.Status;
-
-				FCGIReq.Close();
-			}
-		}
+	} else {
+		throw "Invalid arguments";
 	}
+
 }
 
-Response.Write("OK");
+
+if(("WHITE_LISTED_DEMO_IP" in Application) && Application.WHITE_LISTED_DEMO_IP) {
+
+	var isWhiteListed = CheckIPWhitelisted(Request.ServerVariables["REMOTE_ADDR"], Application.WHITE_LISTED_DEMO_IP.split("|"));
+
+	if(isWhiteListed) {
+
+		if("HTTP_X_BONDI_CODISTO" in Request.ServerVariables && Request.ServerVariables.HTTP_X_BONDI_CODISTO) {
+
+			if(DEBUG)
+				Debug.LogInfo("Request IS OK - Header present\n");
+
+			if(Request.ServerVariables.REQUEST_METHOD == "PUT"){
+
+				var Decoded = decodeURIComponent(Request.ServerVariables.HTTP_X_BONDI_CODISTO);
+
+				var Dte = new Date(Decoded);
+				var Seconds = Math.abs(Dte - new Date()) / 1000;
+				if(DEBUG)
+					Debug.LogInfo("Seconds header diff is " + Seconds + "\n");
+
+				//arbitrary
+				if(Seconds <= 120) {
+
+					var MerchantID = Request.Form["merchantid"];
+					var HostKey = Request.Form["hostkey"];
+					var MagentoAdminPassword = Request.Form["magentoadminpass"];
+
+					if(MerchantID && HostKey && MagentoAdminPassword) {
+
+						if(DEBUG)
+							Debug.LogInfo("All is good . Sending Fastcgi Request\n");
+
+						var FCGIReq = new FastCGIClient();
+						FCGIReq.Open("POST", "fastcgi://127.0.0.1:6970/instancehelper?merchantid=" + MerchantID + "&hostkey=" + encodeURIComponent(HostKey) + "&magentoadminpass=" + encodeURIComponent(MagentoAdminPassword));
+						FCGIReq.Send();
+
+						if(DEBUG)
+							Debug.LogInfo("FCGI Status is " + FCGIReq.Status);
+
+						Response.Status = FCGIReq.Status;
+
+						FCGIReq.Close();
+						Response.Write("OK");
+					}
+				}
+			}
+		}
+
+	} else {
+
+		Response.Status = 403;
+	}
+
+
+} else {
+	Response.Status = 403;
+}
+
 Response.End();
 
