@@ -10,7 +10,7 @@ commands:
           url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.1.0.zip
           type: zip
         extra:
-          sample-data: sample-data-1.9.1.0
+          sample-data: sample-data-1.9.1.0-speedupmate
 
       - name: magento-ce-1.9.0.1-speedupmate
         version: 1.9.0.1
@@ -18,7 +18,7 @@ commands:
           url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.0.1.zip
           type: zip
         extra:
-          sample-data: sample-data-1.9.1.0
+          sample-data: sample-data-1.9.1.0-speedupmate
 
       - name: magento-ce-1.8.1.0-speedupmate
         version: 1.8.1.0
