@@ -11,10 +11,6 @@ ENV HOME /root
 
 RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 
-#Attempt to update Apt-repos to use AWS ones if running on AWS box
-#export AVAILABILITY_ZONE=`wget -qO- http://instance-data/latest/meta-data/placement/availability-zone`
-#export REGION_ID=${AVAILABILITY_ZONE:0:${#AVAILABILITY_ZONE} - 1}
-
 #Add thirdy party repos and update the system
 RUN add-apt-repository -y ppa:ondrej/php5 \
 	&& add-apt-repository -y ppa:nginx/stable \
@@ -55,8 +51,6 @@ RUN sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" /etc/php5/fpm/php.ini
 #Clean up after install
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV MAGENTO_VERSION magento-ce-1.9.0.1
-
 #No prompt on initial clones
 RUN ssh-keyscan -t rsa github.com > ~/.ssh/known_hosts
 
@@ -66,7 +60,7 @@ RUN mkdir -p $CODISTOCONNECT_WORKSPACE
 #Set the workspace environment variable that MageTestStand setup.sh script will use
 ENV WORKSPACE $HOME/Codisto/CodistoConnect
 
-#RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
+ENV MAGENTO_VERSION magento-ce-1.9.0.1-speedupmate
 
 RUN mkdir "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
@@ -88,10 +82,14 @@ ENV SKIP_CLEANUP 1
 RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}" \
 	&& cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
 
-ADD MageTestStand/.n98-magerun.yaml $HOME/.n98-magerun.yaml
+ADD MageTestStand/.n98-magerun.yaml /etc/n98-magerun.yaml
+
+#cd $BUILDENV
+
+RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 
 #Update composer to latest
-RUN $BUILDENV/tools/composer.phar self-update &
+RUN $BUILDENV/tools/composer.phar self-update
 
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
@@ -99,24 +97,24 @@ RUN $SCRIPTS/setup.sh
 #Set up nginx related configuration
 
 #Add our Magento configuration
-ADD build/nginx/magento	/etc/nginx/sites-available/magento
+#ADD build/nginx/magento	/etc/nginx/sites-available/magento
 
 #Enable our Magento configuration, make sure /var/www (server root) is sym linked to magento directory
-RUN rm /etc/nginx/sites-enabled/default \
-	&& ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
-	&& ln -sf $BUILDENV/htdocs /var/www/magento \
-	&& chown -R root:www-data /var/www/magento \
-	&& chmod 750 -R /var/www/magento \
-	&& chown -R root:www-data /root \
-	&& chmod 750 -R /root
+#RUN rm /etc/nginx/sites-enabled/default \
+#	&& ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
+#	&& ln -sf $BUILDENV/htdocs /var/www/magento \
+#	&& chown -R root:www-data /var/www/magento \
+#	&& chmod 750 -R /var/www/magento \
+#	&& chown -R root:www-data /root \
+#	&& chmod 750 -R /root
 
 #Add the plugin updater bash script
-ADD build/codisto_update /usr/bin/codisto_update
-RUN chmod +x /usr/bin/codisto_update
-RUN /usr/bin/codisto_update
+#ADD build/codisto_update /usr/bin/codisto_update
+#RUN chmod +x /usr/bin/codisto_update
+#RUN /usr/bin/codisto_update
 
 #Copy over supervisor configuration
-COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 22 80
 CMD ["/usr/bin/supervisord"]
