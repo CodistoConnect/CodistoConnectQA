@@ -48,11 +48,12 @@ commands:
           sample-data: sample-data-1.6.1.0
 
     demo-data-packages:
-      - name: sample-data-1.9.1.0-speedupmate
-        version: 1.9.1.0
-        dist:
-          url: https://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tgz
-          type: tar
+        - name: sample-data-1.9.1.0-speedupmate
+          version: 1.9.1.0
+          dist:
+            url: http://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tgz
+            type: tar
+
 
     installation:
       defaults:

@@ -70,6 +70,9 @@ if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/compo
 
 
 #Set Magento development configuration
-tools/n98-magerun.phar --root-dir=htdocs config:set dev/template/allow_symlink 1
 tools/n98-magerun.phar dev:symlinks --on --global
 tools/n98-magerun.phar dev:log --on --global
+tools/n98-magerun.phar admin:notifications
+tools/n98-magerun.phar dev:log --on --global
+tools/n98-magerun.phar cache:disable
+

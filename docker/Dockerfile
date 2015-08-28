@@ -97,24 +97,24 @@ RUN $SCRIPTS/setup.sh
 #Set up nginx related configuration
 
 #Add our Magento configuration
-#ADD build/nginx/magento	/etc/nginx/sites-available/magento
+ADD build/nginx/magento	/etc/nginx/sites-available/magento
 
 #Enable our Magento configuration, make sure /var/www (server root) is sym linked to magento directory
-#RUN rm /etc/nginx/sites-enabled/default \
-#	&& ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
-#	&& ln -sf $BUILDENV/htdocs /var/www/magento \
-#	&& chown -R root:www-data /var/www/magento \
-#	&& chmod 750 -R /var/www/magento \
-#	&& chown -R root:www-data /root \
-#	&& chmod 750 -R /root
+RUN rm /etc/nginx/sites-enabled/default \
+	&& ln -s /etc/nginx/sites-available/magento /etc/nginx/sites-enabled/magento \
+	&& ln -sf $BUILDENV/htdocs /var/www/magento \
+	&& chown -R root:www-data /var/www/magento \
+	&& chmod 750 -R /var/www/magento \
+	&& chown -R root:www-data /root \
+	&& chmod 750 -R /root
 
 #Add the plugin updater bash script
-#ADD build/codisto_update /usr/bin/codisto_update
-#RUN chmod +x /usr/bin/codisto_update
-#RUN /usr/bin/codisto_update
+ADD build/codisto_update /usr/bin/codisto_update
+RUN chmod +x /usr/bin/codisto_update
+RUN /usr/bin/codisto_update
 
 #Copy over supervisor configuration
-#COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 22 80
 CMD ["/usr/bin/supervisord"]
