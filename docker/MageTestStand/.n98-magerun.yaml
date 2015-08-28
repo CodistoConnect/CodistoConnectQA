@@ -51,9 +51,8 @@ commands:
       - name: sample-data-1.9.1.0-speedupmate
         version: 1.9.1.0
         dist:
-          url: https://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tar.7z
+          url: https://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tgz
           type: tar
-          shasum: 8f320c0bf6f0734cc8c7c3b5150a959d647a302c
 
     installation:
       defaults:
