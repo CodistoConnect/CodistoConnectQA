@@ -46,13 +46,6 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 		sed -i -e s/MAGENTO_DB_NAME/${MAGENTO_DB_NAME}/g .modman/Aoe_TestSetup/app/etc/local.xml.phpunit
 	fi
 
-
-
-	#cd ${BUILDENV}
-	echo "PWD IS `pwd`"
-
-
-
 	$BUILDENV/tools/n98-magerun.phar install \
       -vvv \
  	  --dbHost="${MAGENTO_DB_HOST}" --dbUser="${MAGENTO_DB_USER}" --dbPass="${MAGENTO_DB_PASS}" --dbName="${MAGENTO_DB_NAME}" --dbPort="${MAGENTO_DB_PORT}" \

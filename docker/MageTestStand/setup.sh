@@ -14,7 +14,7 @@ function cleanup {
 
 trap cleanup EXIT
 
-# check if this is a travis environment
+# check if this is a Travis environment
 if [ ! -z $TRAVIS_BUILD_DIR ] ; then
 	WORKSPACE=$TRAVIS_BUILD_DIR
 fi
@@ -36,8 +36,6 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
-#TODO - enable run unit + integration tests on container start if environment variable set
-#This needs to be moved into the Entrypoint
 if [ -z $TESTS ] ; then
 	echo "Tests were not enabled. Deploying container with Magento + Codisto Connect for manual testing / dev"
 else
