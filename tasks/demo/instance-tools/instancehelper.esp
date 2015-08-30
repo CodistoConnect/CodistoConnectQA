@@ -1,0 +1,86 @@
+/* This script runs on Magento demo instances and is used to update Codisto state*/
+
+var DEBUG = Application.DEBUG || false;
+
+function CheckIPWhitelisted(IP, Range) {
+
+	if(IP && Range) {
+
+		if(!Array.isArray(Range))
+			Range = [Range];
+
+		var WhiteListedIP = { "127.0.0.1" : true};
+
+		Range.forEach(function(IP){
+			WhiteListedIP[IP] = true;
+		});
+
+		return IP in WhiteListedIP;
+
+	} else {
+		throw "Invalid arguments";
+	}
+
+}
+
+
+if(("WHITE_LISTED_DEMO_IP" in Application) && Application.WHITE_LISTED_DEMO_IP) {
+
+	var isWhiteListed = CheckIPWhitelisted(Request.ServerVariables["REMOTE_ADDR"], Application.WHITE_LISTED_DEMO_IP.split("|"));
+
+	if(isWhiteListed) {
+
+		if("HTTP_X_BONDI_CODISTO" in Request.ServerVariables && Request.ServerVariables.HTTP_X_BONDI_CODISTO) {
+
+			if(DEBUG)
+				Debug.LogInfo("Request IS OK - Header present\n");
+
+			if(Request.ServerVariables.REQUEST_METHOD == "PUT"){
+
+				var Decoded = decodeURIComponent(Request.ServerVariables.HTTP_X_BONDI_CODISTO);
+
+				var Dte = new Date(Decoded);
+				var Seconds = Math.abs(Dte - new Date()) / 1000;
+				if(DEBUG)
+					Debug.LogInfo("Seconds header diff is " + Seconds + "\n");
+
+				//arbitrary
+				if(Seconds <= 120) {
+
+					var MerchantID = Request.Form["merchantid"];
+					var HostKey = Request.Form["hostkey"];
+					var MagentoAdminPassword = Request.Form["magentoadminpass"];
+
+					if(MerchantID && HostKey && MagentoAdminPassword) {
+
+						if(DEBUG)
+							Debug.LogInfo("All is good . Sending Fastcgi Request\n");
+
+						var FCGIReq = new FastCGIClient();
+						FCGIReq.Open("POST", "fastcgi://127.0.0.1:6970/instancehelper?merchantid=" + MerchantID + "&hostkey=" + encodeURIComponent(HostKey) + "&magentoadminpass=" + encodeURIComponent(MagentoAdminPassword));
+						FCGIReq.Send();
+
+						if(DEBUG)
+							Debug.LogInfo("FCGI Status is " + FCGIReq.Status);
+
+						Response.Status = FCGIReq.Status;
+
+						FCGIReq.Close();
+						Response.Write("OK");
+					}
+				}
+			}
+		}
+
+	} else {
+
+		Response.Status = 403;
+	}
+
+
+} else {
+	Response.Status = 403;
+}
+
+Response.End();
+

@@ -1,28 +1,47 @@
 
-
-var Logger = Server.Import("/include/log.esp");
-
 if(/^\/graph\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Graph URL was requested - " + Request.ServerVariables.URL + "Transferring");
 	Server.Execute("/tasks/graph/index.esp");
 	Response.End();
 }
 else if(/^\/plugin\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Plugin URL was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/plugin/index.esp");
 	Response.End();
 }
 else if(/^\/linting\//.test(Request.ServerVariables.URL)) {
 
-	//Logger.Log("ROUTER", "Linting URL was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/linting/index.esp");
+	Response.End();
+}
+else if(/^\/demo\//.test(Request.ServerVariables.URL)) {
+
+
+	Server.Require("/include/common.esp");
+
+	if(("WHITE_LISTED_DEMO_IP" in Application) && Application.WHITE_LISTED_DEMO_IP) {
+
+		var isWhiteListed = CheckIPWhitelisted(Request.ServerVariables["X-FORWARDED-FOR"], Application.WHITE_LISTED_DEMO_IP.split("|"));
+
+		if(isWhiteListed) {
+
+			Server.Execute("/tasks/demo/index.esp");
+
+		} else {
+
+			Response.Status = 403;
+
+		}
+
+
+	} else {
+		Response.Status = 403;
+	}
+
 	Response.End();
 }
 
 else {
-	//Logger.Log("ROUTER", "Static Resource was requested - " + Request.ServerVariables.URL, "Transferring");
 	Server.Execute("/tasks/static/index.esp");
 	Response.End();
 }
