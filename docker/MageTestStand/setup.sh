@@ -36,8 +36,7 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
-#Link CodistoConnect and any other modules such as ecom dev phpunit testing framework with Magento using Modman (sym link)
-tools/modman deploy-all --force
+
 
 #Populate the initial testing database
 ${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
