@@ -27,6 +27,8 @@ echo
 
 if [ ! -f htdocs/app/etc/local.xml ] ; then
 
+	echo "Creating main database and installing magento"
+
 	# Create main database
 	MYSQLPASS=""
 	if [ ! -z $MAGENTO_DB_PASS ]; then MYSQLPASS="-p${MAGENTO_DB_PASS}"; fi
@@ -55,8 +57,9 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
       --baseUrl="${MAGENTO_BASEURL}" || { echo "Installing Magento failed"; exit 1; }
 fi
 
-#Link codistoconnect and magento
-tools/modman deploy-all --force
+
+${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
+
 
 #Install https://github.com/EcomDev/EcomDev_PHPUnit.git
 if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install --no-interaction ; fi

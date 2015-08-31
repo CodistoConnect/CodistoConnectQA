@@ -36,12 +36,20 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
+#Link CodistoConnect and any other modules such as ecom dev phpunit testing framework with Magento using Modman (sym link)
+tools/modman deploy-all --force
+
+#Populate the initial testing database
+${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
+
+
 if [ -z $TESTS ] ; then
 	echo "Tests were not enabled. Deploying container with Magento + Codisto Connect for manual testing / dev"
 else
-	echo "Running tests .."
-	cd ${BUILDENV}/htdocs
-	${BUILDENV}/bin/phpunit --colors -d display_errors=1
+
+	echo "Running CodistoConnect tests .."
+
+	${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group Codisto_Sync
 fi
 
 
