@@ -57,10 +57,6 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
       --baseUrl="${MAGENTO_BASEURL}" || { echo "Installing Magento failed"; exit 1; }
 fi
 
-
-${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
-
-
 #Install https://github.com/EcomDev/EcomDev_PHPUnit.git
 if [ ! -f $BUILDENV/composer.lock ] ; then cd $BUILDENV && $BUILDENV/tools/composer.phar install --no-interaction ; fi
 
