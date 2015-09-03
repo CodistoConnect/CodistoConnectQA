@@ -10,7 +10,7 @@ var ServeFile = function(FilePath) {
 	if(File.IsFile(FilePath)) {
 
 		Debug.LogInfo("Serving");
-		Response.Status = 200;
+		Response.Status = "200 OK";
 		Response.ContentType = "application/x-gzip";
 		Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
 		Response.Pragma = "no-cache";
