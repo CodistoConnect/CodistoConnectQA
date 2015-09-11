@@ -31,6 +31,10 @@ echo "Using build directory ${BUILDENV}"
 
 cd $BUILDENV
 
+ 
+#Stop github rate limiting .. provide token for public repo only
+$BUILDENV/tools/composer.phar config --global github-oauth.github.com 46fef9ded53e4c3910bfef21e509d00e40784468
+
 $SCRIPTS/install.sh
 
 if [ -d "${WORKSPACE}/vendor" ] ; then
