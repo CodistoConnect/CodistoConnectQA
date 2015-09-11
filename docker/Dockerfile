@@ -110,13 +110,8 @@ RUN rm /etc/nginx/sites-enabled/default \
 	&& chmod 750 -R /root
 
 #Add the plugin updater bash script
-ADD build/codisto_update /usr/bin/codisto_update
-RUN chmod +x /usr/bin/codisto_update
-RUN /usr/bin/codisto_update
-
-#Tests 
-RUN $SCRIPTS/tests.sh
-
+ADD build/codisto_update $SCRIPTS/codisto_update
+RUN chmod +x $SCRIPTS/codisto_update
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

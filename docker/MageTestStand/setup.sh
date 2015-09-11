@@ -41,6 +41,8 @@ if [ -d "${WORKSPACE}/vendor" ] ; then
 	cp -rf ${WORKSPACE}/vendor/* "${BUILDENV}/vendor/"
 fi
 
+$SCRIPTS/codisto_update
+$SCRIPTS/tests.sh
 
 
 
