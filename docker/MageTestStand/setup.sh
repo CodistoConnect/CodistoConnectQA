@@ -30,6 +30,7 @@ service mysql start
 echo "Using build directory ${BUILDENV}"
 
 cd $BUILDENV
+
 $SCRIPTS/install.sh
 
 if [ -d "${WORKSPACE}/vendor" ] ; then

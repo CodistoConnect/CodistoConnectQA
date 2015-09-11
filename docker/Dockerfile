@@ -94,8 +94,6 @@ RUN $BUILDENV/tools/composer.phar self-update
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
 
-#Tests 
-RUN $SCRIPTS/tests.sh
 
 #Set up nginx related configuration
 
@@ -115,6 +113,10 @@ RUN rm /etc/nginx/sites-enabled/default \
 ADD build/codisto_update /usr/bin/codisto_update
 RUN chmod +x /usr/bin/codisto_update
 RUN /usr/bin/codisto_update
+
+#Tests 
+#RUN $SCRIPTS/tests.sh
+
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
