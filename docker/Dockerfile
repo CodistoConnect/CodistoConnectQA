@@ -70,8 +70,8 @@ RUN mkdir "/Scripts"
 ENV SCRIPTS "/Scripts"
 ADD MageTestStand/setup.sh $SCRIPTS/setup.sh
 ADD MageTestStand/install.sh $SCRIPTS/install.sh
-RUN chmod +x $SCRIPTS/setup.sh && chmod +x $SCRIPTS/install.sh
-
+ADD MageTestStand/tests.sh $SCRIPTS/tests.sh
+RUN chmod +x $SCRIPTS/setup.sh && chmod +x $SCRIPTS/install.sh && chmod +x $SCRIPTS/tests.sh
 
 #Get codisto plugin
 RUN git clone --progress --verbose --branch master git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE/CodistoConnect > /dev/null
@@ -93,6 +93,9 @@ RUN $BUILDENV/tools/composer.phar self-update
 
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
+
+#Tests 
+RUN $SCRIPTS/tests.sh
 
 #Set up nginx related configuration
 
