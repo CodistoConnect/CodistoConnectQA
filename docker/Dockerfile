@@ -115,7 +115,7 @@ RUN chmod +x /usr/bin/codisto_update
 RUN /usr/bin/codisto_update
 
 #Tests 
-#RUN $SCRIPTS/tests.sh
+RUN $SCRIPTS/tests.sh
 
 
 #Copy over supervisor configuration

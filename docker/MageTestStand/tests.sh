@@ -1,5 +1,7 @@
 #Populate the initial testing database
-${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
+cd ${BUILDENV}/htdocs
+${BUILDENV}/bin/phpunit --colors -d display_errors=1
+#${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
 
 
 if [ -z $TESTS ] ; then
