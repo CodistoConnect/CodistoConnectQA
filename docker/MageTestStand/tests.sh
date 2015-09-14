@@ -1,4 +1,7 @@
 
+#Start mysql temporarily to import magento structures, sample data and so on use script from /init.d as it makes sure mysql has started correctly
+service mysql start
+
 #Populate the initial testing database
 cd ${BUILDENV}/htdocs
 
