@@ -93,8 +93,13 @@ RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
 
-#Install https://github.com/EcomDev/EcomDev_PHPUnit.git
-RUN cd $BUILDENV ; tools/composer.phar install
+TK=`echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64`
+$BUILDENV/tools/composer.phar config --global github-oauth.github.com ${TK}
+
+#Install https://github.com/EcomDev/EcomDev_PHPUnit.git and deps
+RUN cd $BUILDENV \
+	&& env TK=`echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64` \
+	tools/composer.phar config --global github-oauth.github.com ${TK} install
 
 #Install Magento
 RUN $SCRIPTS/setup.sh
@@ -115,6 +120,7 @@ RUN rm /etc/nginx/sites-enabled/default \
 
 #Update Codisto plugin, run tests etc
 RUN $SCRIPTS/codisto_update && $SCRIPTS/tests.sh
+
 
 
 #Copy over supervisor configuration
