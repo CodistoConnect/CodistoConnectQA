@@ -33,7 +33,8 @@ cd $BUILDENV
 
  
 #Stop github rate limiting .. provide token for public repo only
-$BUILDENV/tools/composer.phar config --global github-oauth.github.com 46fef9ded53e4c3910bfef21e509d00e40784468
+TK=`echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64`
+$BUILDENV/tools/composer.phar config --global github-oauth.github.com ${TK}
 
 $SCRIPTS/install.sh
 
