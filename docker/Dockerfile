@@ -68,9 +68,9 @@ ENV BUILDENV "$CODISTOCONNECT_WORKSPACE/MageTestStand"
 #Add build scripts
 RUN mkdir "/Scripts"
 ENV SCRIPTS "/Scripts"
-ADD MageTestStand/setup.sh $SCRIPTS/setup.sh
-ADD MageTestStand/install.sh $SCRIPTS/install.sh
-ADD MageTestStand/tests.sh $SCRIPTS/tests.sh
+COPY MageTestStand/setup.sh $SCRIPTS/setup.sh
+COPY MageTestStand/install.sh $SCRIPTS/install.sh
+COPY MageTestStand/tests.sh $SCRIPTS/tests.sh
 RUN chmod +x $SCRIPTS/setup.sh && chmod +x $SCRIPTS/install.sh && chmod +x $SCRIPTS/tests.sh
 
 #Get codisto plugin
@@ -82,7 +82,7 @@ ENV SKIP_CLEANUP 1
 RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.git "${BUILDENV}" \
 	&& cp -rf "${WORKSPACE}" "${BUILDENV}/.modman/"
 
-ADD MageTestStand/.n98-magerun.yaml /etc/n98-magerun.yaml
+COPY MageTestStand/.n98-magerun.yaml /etc/n98-magerun.yaml
 
 #cd $BUILDENV
 
@@ -91,14 +91,15 @@ RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
 
+COPY build/codisto_update $SCRIPTS/codisto_update
+
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
-
 
 #Set up nginx related configuration
 
 #Add our Magento configuration
-ADD build/nginx/magento	/etc/nginx/sites-available/magento
+COPY build/nginx/magento	/etc/nginx/sites-available/magento
 
 #Enable our Magento configuration, make sure /var/www (server root) is sym linked to magento directory
 RUN rm /etc/nginx/sites-enabled/default \
@@ -108,10 +109,6 @@ RUN rm /etc/nginx/sites-enabled/default \
 	&& chmod 750 -R /var/www/magento \
 	&& chown -R root:www-data /root \
 	&& chmod 750 -R /root
-
-#Add the plugin updater bash script
-ADD build/codisto_update $SCRIPTS/codisto_update
-RUN chmod +x $SCRIPTS/codisto_update
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
