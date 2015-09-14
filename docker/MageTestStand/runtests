@@ -1,0 +1,2 @@
+cd ${BUILDENV}/htdocs
+service mysql start && ${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group Codisto_Sync
