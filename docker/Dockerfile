@@ -96,8 +96,7 @@ RUN $BUILDENV/tools/composer.phar self-update
 #Install https://github.com/EcomDev/EcomDev_PHPUnit.git
 RUN cd $BUILDENV ; tools/composer.phar install
 
-
-#Deploy db etc
+#Install Magento
 RUN $SCRIPTS/setup.sh
 
 #Set up nginx related configuration
@@ -113,6 +112,10 @@ RUN rm /etc/nginx/sites-enabled/default \
 	&& chmod 750 -R /var/www/magento \
 	&& chown -R root:www-data /root \
 	&& chmod 750 -R /root
+
+#Update Codisto plugin, run tests etc
+RUN $SCRIPTS/codisto_update && $SCRIPTS/tests.sh
+
 
 #Copy over supervisor configuration
 COPY build/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
