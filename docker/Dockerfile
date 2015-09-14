@@ -98,7 +98,8 @@ $BUILDENV/tools/composer.phar config --global github-oauth.github.com ${TK}
 
 #Install https://github.com/EcomDev/EcomDev_PHPUnit.git and deps
 RUN cd $BUILDENV \
-&& tools/composer.phar config --global github-oauth.github.com `echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64` install
+&& tools/composer.phar config --global github-oauth.github.com `echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64` \
+		&& tools/composer.phar install
 
 #Install Magento
 RUN $SCRIPTS/setup.sh
