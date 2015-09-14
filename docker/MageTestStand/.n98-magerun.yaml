@@ -1,0 +1,67 @@
+#Default https://github.com/netz98/n98-magerun/blob/master/config.yaml
+
+#Override for CodistoConnect
+commands:
+  N98\Magento\Command\Installer\InstallCommand:
+    magento-packages:
+      - name: magento-ce-1.9.1.1-speedupmate
+        version: 1.9.1.1
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.1.0.zip
+          type: zip
+        extra:
+          sample-data: sample-data-1.9.1.0-speedupmate
+
+      - name: magento-ce-1.9.0.1-speedupmate
+        version: 1.9.0.1
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.9.0.1.zip
+          type: zip
+        extra:
+          sample-data: sample-data-1.9.1.0-speedupmate
+
+      - name: magento-ce-1.8.1.0-speedupmate
+        version: 1.8.1.0
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.8.1.0.zip
+          type: zip
+          shasum: f8d01578bf266c82194776793208d164f305349e
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+      - name: magento-ce-1.7.0.2-speedupmate
+        version: 1.7.0.2
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.7.0.2.zip
+          type: zip
+          shasum: c2a08e0cb508b815a9c72db986fab4cd2cd819a7
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+      - name: magento-ce-1.6.2.0-speedupmate
+        version: 1.6.2.0
+        dist:
+          url: https://github.com/speedupmate/Magento-CE-Mirror/archive/magento-ce-1.6.2.0.zip
+          type: zip
+          shasum: ed184dc69ee06f655a033ec3573ce195f85ab28a
+        extra:
+          sample-data: sample-data-1.6.1.0
+
+    demo-data-packages:
+        - name: sample-data-1.9.1.0-speedupmate
+          version: 1.9.1.0
+          dist:
+            url: http://raw.githubusercontent.com/Vinai/compressed-magento-sample-data/1.9.1.0/compressed-magento-sample-data-1.9.1.0.tgz
+            type: tar
+
+
+    installation:
+      defaults:
+        currency: AUD
+        locale: en_AU
+        timezone: Australia/Sydney
+        admin_username: admin
+        admin_firstname: admin
+        admin_lastname: magento
+        admin_password: magento123
+        admin_email: test@codisto.com
