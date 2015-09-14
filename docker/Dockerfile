@@ -92,6 +92,7 @@ RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 RUN $BUILDENV/tools/composer.phar self-update
 
 COPY build/codisto_update $SCRIPTS/codisto_update
+RUN chmod +x $SCRIPTS/codisto_update
 
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
