@@ -93,9 +93,6 @@ RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
 
-TK=`echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64`
-$BUILDENV/tools/composer.phar config --global github-oauth.github.com ${TK}
-
 #Install https://github.com/EcomDev/EcomDev_PHPUnit.git and deps
 RUN cd $BUILDENV \
 && tools/composer.phar config --global github-oauth.github.com `echo "NTdiYjAxYTcxN2E1NWU4YTc2NzMwNWZkMzA4YzU3NDU2NzYzMGZjOQo=" | openssl enc -d -base64` \
