@@ -58,12 +58,6 @@ if [ ! -f htdocs/app/etc/local.xml ] ; then
 fi
 
 
-
-#Install https://github.com/EcomDev/EcomDev_PHPUnit.git
-if [ ! -f $BUILDENV/composer.lock ] ; then
-	cd $BUILDENV && $BUILDENV/tools/composer.phar install
-fi
-
 #Link CodistoConnect and any other modules such as ecom dev phpunit testing framework with Magento using Modman (sym link)
 #currently the branch checked out on container create is master which doesn't container the Test directory and therefor the symlink won't be created and tests won't exist
 #that will be resoled when bm_travis_ci is released to master

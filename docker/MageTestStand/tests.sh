@@ -1,7 +1,11 @@
+#update codisto plugin to latest version -- docker cache won't pull latest for git clone
+$SCRIPTS/codisto_update
+
+
 #Populate the initial testing database
 cd ${BUILDENV}/htdocs
-${BUILDENV}/bin/phpunit --colors -d display_errors=1
-#${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
+#${BUILDENV}/bin/phpunit --colors -d display_errors=1
+${BUILDENV}/bin/phpunit --colors -d display_errors=1 --group EcomDev_PHPUnitTest
 
 
 if [ -z $TESTS ] ; then

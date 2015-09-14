@@ -76,6 +76,9 @@ RUN chmod +x $SCRIPTS/setup.sh && chmod +x $SCRIPTS/install.sh && chmod +x $SCRI
 #Get codisto plugin
 RUN git clone --progress --verbose --branch master git://github.com/CodistoConnect/CodistoConnect.git $CODISTOCONNECT_WORKSPACE/CodistoConnect > /dev/null
 
+COPY build/codisto_update $SCRIPTS/codisto_update
+
+
 ENV SKIP_CLEANUP 1
 
 #Get MageTestStand
@@ -84,15 +87,15 @@ RUN git clone --progress --verbose https://github.com/AOEpeople/MageTestStand.gi
 
 COPY MageTestStand/.n98-magerun.yaml /etc/n98-magerun.yaml
 
-#cd $BUILDENV
 
 RUN "bash" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
 
 #Update composer to latest
 RUN $BUILDENV/tools/composer.phar self-update
 
-COPY build/codisto_update $SCRIPTS/codisto_update
-RUN chmod +x $SCRIPTS/codisto_update
+#Install https://github.com/EcomDev/EcomDev_PHPUnit.git
+RUN cd $BUILDENV ; tools/composer.phar install
+
 
 #Deploy db etc
 RUN $SCRIPTS/setup.sh
