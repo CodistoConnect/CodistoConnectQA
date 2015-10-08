@@ -23,26 +23,26 @@ return array(
 
 //The Magento Connect extension name.  Must be unique on Magento Connect
 //Has no relation to your code module name.  Will be the Connect extension name
-'extension_name'         => 'CodistoConnect',
+'extension_name'         => 'codistoconnect',
 
-//Your extension version.  By default, if you're creating an extension from a 
+//Your extension version.  By default, if you're creating an extension from a
 //single Magento module, the tar-to-connect script will look to make sure this
-//matches the module version.  You can skip this check by setting the 
+//matches the module version.  You can skip this check by setting the
 //skip_version_compare value to true
 'extension_version'      => '1.1.26',
 'skip_version_compare'   => true, //confirm this
 
-//You can also have the package script use the version in the module you 
-//are packaging with. 
+//You can also have the package script use the version in the module you
+//are packaging with.
 'auto_detect_version'   => true,
 
 //Where on your local system you'd like to build the files to
 'path_output'            => $buildpath,
 
-//Magento Connect license value. 
+//Magento Connect license value.
 'stability'              => 'stable',
 
-//Magento Connect license value 
+//Magento Connect license value
 'license'                => 'OSL-3.0',
 
 //Magento Connect channel value.  This should almost always (always?) be community
