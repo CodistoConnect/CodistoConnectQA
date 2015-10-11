@@ -22,7 +22,7 @@ var ServeFile = function(FilePath) {
 		Response.SendFile(FilePath);
 	} else {
 
-		Response.Status = 404;
+		Response.Status = "404 Not Found";
 		Response.Write();
 	}
 	Response.End();
