@@ -6,7 +6,7 @@ var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
 var ServeFile = function(FilePath) {
-Debug.LogInfo(FilePath);
+
 	if(File.IsFile(FilePath)) {
 
 		Debug.LogInfo("Serving");
