@@ -60,7 +60,8 @@ if [ -z ${BRANCH+y} ]; then
 fi
 
 if [ -z ${BUILDPATH+y} ]; then
-	BUILDPATH="/tmp"
+	BUILDPATH="/tmp/build/"
+	mkdir -p $BUILDPATH
 fi
 
 logger -s "Using the following paths "
@@ -244,15 +245,15 @@ elif [ "$BRANCH" != "master" ]; then
 	SUFFIX="($BRANCH)"
 fi
 
-logger -s "Pluggin suffix is $SUFFIX"
+logger -s "Plugin suffix is $SUFFIX"
 
 #rename CodistoConnect-1.2.34.tgz  to CodistoConnect$SUFFIXversion.tgz
 
-ORIGINALNAME=''$BUILDPATH'/CodistoConnect-'$PLUGINVERSION'.tgz'
+ORIGINALNAME=''$BUILDPATH'/codistoconnect-'$PLUGINVERSION'.tgz'
 PLUGINFNAME=CodistoConnect$SUFFIX-$PLUGINVERSION-$RESELLER.tgz
 
 logger -s "OriginalName is $ORIGINALNAME"
-logger -s "PLUGINNAMe is $PLUGINFNAME"
+logger -s "PLUGINNAME is $PLUGINFNAME"
 logger -s "RENAMING $ORIGINALNAME TO $BUILDPATH/$PLUGINFNAME"
 
 
