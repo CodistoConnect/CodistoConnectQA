@@ -6,7 +6,7 @@ var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
 var ServeFile = function(FilePath) {
-
+Debug.LogInfo(FilePath);
 	if(File.IsFile(FilePath)) {
 
 		Debug.LogInfo("Serving");
@@ -22,7 +22,7 @@ var ServeFile = function(FilePath) {
 		Response.SendFile(FilePath);
 	} else {
 
-		Response.Status = 404;
+		Response.Status = "404 Not Found";
 		Response.Write();
 	}
 	Response.End();
