@@ -1,0 +1,112 @@
+
+Server.Include('qunit/qunit-1.9.0.js');
+Server.Include('qunit/junitlogger.js');
+
+var ReportSummary = {
+	failed: 0,
+	passed: 0,
+	total: 0,
+	time: 0,
+};
+
+var ReportXML;
+
+QUnit.jUnitReport = function(result) {
+
+	ReportSummary = result.results;
+	ReportXML += result.xml;
+
+/*
+	ReportSummary.failed = result.results.failed;
+	ReportSummary.passed = result.results.passed;
+	ReportSummary.total = result.results.total;
+	ReportSummary.time = result.results.time;
+	ReportSummary.xml = result.xml;
+*/
+
+};
+
+QUnit.jUnitReportSend = function(report) {
+
+		var SlackRoomToken = Application.SLACKROOMTOKEN;
+
+		//restore STDOUT response writing
+		Response.Write = PlaceholderResponseWrite;
+		Response.Write(ReportXML);
+
+		var SlackMessage;
+
+		if(ReportSummary.failed > 0) {
+
+			SlackMessage =	{
+				"room_token" : SlackRoomToken,
+				"request" :
+				{
+					"username": "CodistoConnect",
+					"attachments":
+						[
+							{
+								"fallback": "Summary - " + JSON.stringify(ReportSummary),
+								"pretext": "qa.codisto.com - Integration tests passed",
+								"color":"#62CF6F",
+								"fields":
+									[
+										{
+											"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
+											"value": ReportXML,
+											"short":false
+										}
+									]
+							}
+						]
+				}
+			};
+
+		} else {
+
+			SlackMessage =	{
+				"room_token" : SlackRoomToken,
+				"request" :
+				{
+					"username": "CodistoConnect",
+					"attachments":
+						[
+							{
+								"fallback": "Summary - " + JSON.stringify(ReportSummary),
+								"pretext": "qa.codisto.com - Integration tests passed",
+								"color":"#62CF6F",
+								"fields":
+									[
+										{
+											"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
+											"value": "Integration tests passed, carry on",
+											"short":false
+										}
+									]
+							}
+						]
+				}
+			};
+
+		}
+
+		Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
+};
+
+
+var listing = Dir.Listing(".");
+var PlaceholderResponseWrite = Response.Write;
+
+//Suppress any output while tests are running
+Response.Write = function(str){ return; };
+
+for(var i = 0, len = listing.length; i < len; i++)
+{
+	var elem = listing[i];
+	if(!elem.Directory && /^test_[a-z0-9]+\.esp$/i.test(elem.Name))
+	{
+		Server.Include(elem.Path);
+	}
+}
+
+QUnit.jUnitReportSend(ReportSummary);

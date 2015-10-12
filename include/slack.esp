@@ -1,4 +1,10 @@
-var h = new HttpClient();
-h.SetRequestHeader("CONTENT-TYPE", "application/json");
-h.Open("POST", "https://ontechnology.slack.com/services/hooks/incoming-webhook?token=" + Request.Form.room_token);
-h.Send(Request.Form.request);
+try {
+
+  var h = new HttpClient();
+  h.SetRequestHeader("CONTENT-TYPE", "application/json");
+  h.Open("POST", "https://ontechnology.slack.com/services/hooks/incoming-webhook?token=" + Request.Form.room_token);
+  h.Send(Request.Form.request);
+
+} catch(e) {
+
+}

@@ -1,0 +1,43 @@
+QUnit.module('Plugin');
+
+QUnit.test('PluginInstall', function(assert){
+
+	//Do fastcgi request to build plugin and grab the request body .. make sure the length is > 0
+	//extract it and confirm file structure (do a dir listing on it)
+	//then figure out how to install it ... probably need a Magento instance running on QA box .. perhaps in docker container
+
+	var Branch = "master";
+	var ResellerKey = 'n/a';
+	var SHA1 = 'n/a';
+	var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
+
+	var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild/manual?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken + "&TEST=1";
+
+	var FCGIReq = new FastCGIClient();
+	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.Send();
+
+	Status = FCGIReq.Status;
+	assert.equal(200, Status, "Plugin build fastcgi status was " + Status);
+
+	assert.ok(FCGIReq.ResponseBody.length > 0, " ResponseBody length was 0");
+
+	var ResponseBody = FCGIReq.ResponseBody.split("\n");
+	var PluginDetails = ResponseBody[ResponseBody.length - 2].split("~~");
+	var PluginVersion = PluginDetails[0];
+	var PluginPath = PluginDetails[1];
+
+	assert.notEqual(PluginVersion, NaN, "Plugin version was NaN");
+	assert.notEqual(PluginPath, NaN, "Resulting plugin path was NaN");
+
+	var ValidVersion = /(\d.){2}\d+$/.test(PluginVersion);
+	assert.ok(ValidVersion, "Version was not in expected n.n.n.n format - was " + PluginVersion);
+
+
+});
+
+QUnit.test('PluginResellerInstall', function(assert){
+	assert.ok(true,true);
+
+	//same as above but look for reseller node in the configuration file
+});
