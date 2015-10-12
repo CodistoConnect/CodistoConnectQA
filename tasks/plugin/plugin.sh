@@ -302,28 +302,27 @@ fi
 if [ -z $RESELLER ]; then
 	if  [ "$BRANCH" == "development" ]  || [ "$BRANCH" == "master" ]; then
 
-		#Make a symlink so location is always the same when browser GET's the plugin (only if dev or master)
-		logger -s "Making a symlink from $SCRIPTPATH/$PLUGINFNAME  to $SCRIPTPATH/CodistoConnect$SUFFIX.tgz"
-		rm "$SCRIPTPATH/CodistoConnect$SUFFIX.tgz" >/dev/null 2>&1; ln -s "$SCRIPTPATH/$PLUGINFNAME" "$SCRIPTPATH/CodistoConnect$SUFFIX.tgz"
+		if [ -z $TEST ]; then
+			#Make a symlink so location is always the same when browser GET's the plugin (only if dev or master)
+			logger -s "Making a symlink from $SCRIPTPATH/$PLUGINFNAME  to $SCRIPTPATH/CodistoConnect$SUFFIX.tgz"
+			rm "$SCRIPTPATH/CodistoConnect$SUFFIX.tgz" >/dev/null 2>&1; ln -s "$SCRIPTPATH/$PLUGINFNAME" "$SCRIPTPATH/CodistoConnect$SUFFIX.tgz"
 
-		logger -s "Copying to codisto.com"
-		scp "$SCRIPTPATH/$PLUGINFNAME" "nwo@aws-chaos-us-w-1:/home/nwo/codisto/plugin/"
+			logger -s "Copying to codisto.com"
+			scp "$SCRIPTPATH/$PLUGINFNAME" "nwo@aws-chaos-us-w-1:/home/nwo/codisto/plugin/"
 
-		#Create symlink to this new version on codisto.com
-		if [ "$BRANCH" == "master" ]; then
-			ssh nwo@aws-chaos-us-w-1 "rm /home/nwo/codisto/plugin/CodistoConnect.tgz >/dev/null 2>&1; ln -s /home/nwo/codisto/plugin/$PLUGINFNAME /home/nwo/codisto/plugin/CodistoConnect.tgz"
+			#Create symlink to this new version on codisto.com
+			if [ "$BRANCH" == "master" ]; then
+				ssh nwo@aws-chaos-us-w-1 "rm /home/nwo/codisto/plugin/CodistoConnect.tgz >/dev/null 2>&1; ln -s /home/nwo/codisto/plugin/$PLUGINFNAME /home/nwo/codisto/plugin/CodistoConnect.tgz"
+			fi
+
+			if [ "$BRANCH" == "development" ]; then
+				ssh nwo@aws-chaos-us-w-1 "rm /home/nwo/codisto/plugin/CodistoConnect-beta.tgz >/dev/null 2>&1; ln -s /home/nwo/codisto/plugin/$PLUGINFNAME /home/nwo/codisto/plugin/CodistoConnect-beta.tgz"
+			fi
 		fi
-
-		if [ "$BRANCH" == "development" ]; then
-			ssh nwo@aws-chaos-us-w-1 "rm /home/nwo/codisto/plugin/CodistoConnect-beta.tgz >/dev/null 2>&1; ln -s /home/nwo/codisto/plugin/$PLUGINFNAME /home/nwo/codisto/plugin/CodistoConnect-beta.tgz"
-		fi
-
 	fi
 fi
 
-
 logger -s "Plugin build completed"
-
 
 #Leave a note about build
 echo "extension built on $SDATE (branch [$BRANCH] - sha1[$SHA1]) - Extension package is -> $PLUGINFNAME">> $SCRIPTPATH/extensionbuildlog.txt
