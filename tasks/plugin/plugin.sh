@@ -16,6 +16,8 @@ RESELLER=$4
 
 GITHUBTOKEN=$5
 
+TEST=$6
+
 #Variables that might be set but have empty values should be unset to simplify logic below
 if [[ $SHA1 ]]; then
 	if [[ ${SHA1} ]]; then
@@ -179,22 +181,43 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 	#Update master
 	git branch -D master
 	git checkout -b master
-	git push origin master --force
+
+
+	if [ -z ${TEST} ]; then
+			logger -s "Pusing master"
+			#git push origin master --force
+	else
+			logger -s "Not pushing master - integration tests running"
+	fi
 
 	#Create a new tag with the plugin version
 	git tag -d "$PLUGINVERSION"
 	git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
-	git push origin "$PLUGINVERSION" --force
-	
+
+	if [ -z ${TEST} ]; then
+			logger -s "Pusing tag"
+			#git push origin "$PLUGINVERSION" --force
+	else
+			logger -s "Not pushing tag - integration tests running"
+	fi
+
+
+
 	#checkout development branch of the specific SHA
 	logger -s "Checking out development branch with sha of $DEVSHA"
 	git checkout $DEVSHA --force
 	git merge "$PLUGINVERSION" --no-edit
-	
+
 	#we are in a detached state, kill development and recreate
 	git branch -D development
 	git checkout -b development
-	git push origin development --force
+
+  if [ -z ${TEST} ]; then
+			logger -s "Pusing development"
+			#git push origin development --force
+	else
+		logger -s "Not pushing development - integration tests running"
+	fi
 
 	#We are finished with development so back to the SHA1 that was checked out for master
 	git checkout master
@@ -306,5 +329,3 @@ logger -s "Plugin build completed"
 echo "extension built on $SDATE (branch [$BRANCH] - sha1[$SHA1]) - Extension package is -> $PLUGINFNAME">> $SCRIPTPATH/extensionbuildlog.txt
 #Leave plugin version and path to plugin as last line in STDOUT to be captured
 echo "$PLUGINVERSION~~$PLUGINFNAME"
-
-
