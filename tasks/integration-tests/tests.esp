@@ -16,23 +16,19 @@ QUnit.jUnitReport = function(result) {
 	ReportSummary = result.results;
 	ReportXML += result.xml;
 
-/*
-	ReportSummary.failed = result.results.failed;
-	ReportSummary.passed = result.results.passed;
-	ReportSummary.total = result.results.total;
-	ReportSummary.time = result.results.time;
-	ReportSummary.xml = result.xml;
-*/
-
 };
 
-QUnit.jUnitReportSend = function(report) {
+QUnit.jUnitReportSend = function(report, isSlack) {
 
 		var SlackRoomToken = Application.SLACKROOMTOKEN;
 
 		//restore STDOUT response writing
 		Response.Write = PlaceholderResponseWrite;
 		Response.Write(ReportXML);
+
+		if(!isSlack) {
+			return;
+		}
 
 		var SlackMessage;
 
@@ -87,7 +83,6 @@ QUnit.jUnitReportSend = function(report) {
 						]
 				}
 			};
-
 		}
 
 		Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
@@ -109,4 +104,5 @@ for(var i = 0, len = listing.length; i < len; i++)
 	}
 }
 
-QUnit.jUnitReportSend(ReportSummary);
+//TODO enable Slack again
+QUnit.jUnitReportSend(ReportSummary, false);

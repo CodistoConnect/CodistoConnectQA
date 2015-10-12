@@ -142,8 +142,9 @@ if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
 
 if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
 
-	if ("HTTP_X_CODISTO_BUILD" in Request.ServerVariables && Request.ServerVariables.HTTP_X_CODISTO_BUILD) {
+	Debug.LogInfo("GOT HERE");
 
+	if ("HTTP_X_CODISTO_BUILD" in Request.ServerVariables && Request.ServerVariables.HTTP_X_CODISTO_BUILD) {
 
 		var Branch = Request.QueryString.branch;
 		var SHA1 = Request.QueryString.sha1;

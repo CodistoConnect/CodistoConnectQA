@@ -1,17 +1,14 @@
 QUnit.module('Plugin');
 
-QUnit.test('PluginInstall', function(assert){
-
-	//Do fastcgi request to build plugin and grab the request body .. make sure the length is > 0
-	//extract it and confirm file structure (do a dir listing on it)
-	//then figure out how to install it ... probably need a Magento instance running on QA box .. perhaps in docker container
+//Internal test to make sure FCGI is working correctly
+QUnit.test('PluginBuiltFCGIProto', function(assert){
 
 	var Branch = "master";
 	var ResellerKey = 'n/a';
 	var SHA1 = 'n/a';
 	var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
 
-	var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild/manual?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken + "&TEST=1";
+	var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild/manual?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken + "&TEST=1&download=1";
 
 	var FCGIReq = new FastCGIClient();
 	FCGIReq.Open("POST", FCGIURL);
@@ -33,11 +30,43 @@ QUnit.test('PluginInstall', function(assert){
 	var ValidVersion = /(\d.){2}\d+$/.test(PluginVersion);
 	assert.ok(ValidVersion, "Version was not in expected n.n.n.n format - was " + PluginVersion);
 
+});
+
+//Download plugin via HTTP and confirm everything is OK
+QUnit.test('PluginInstall', function(assert){
+
+	var h = new HttpClient();
+	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1");
+	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.Send();
+
+	assert.ok(h.Status == 200);
+
+	//check plugin size is OK
+	var MinSize = 20 * 1024;
+	var MaxSize = 50 * 1024;
+	var ActualSize = h.ResponseBody.length;
+
+	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
 
 });
 
 QUnit.test('PluginResellerInstall', function(assert){
-	assert.ok(true,true);
 
-	//same as above but look for reseller node in the configuration file
+	var h = new HttpClient();
+	var ResellerKey = "123abc";
+	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&resellerkey=" + encodeURIComponent(ResellerKey) + "&download=1");
+	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.Send();
+
+	assert.ok(h.Status == 200);
+
+	//check plugin size is OK
+	var MinSize = 20 * 1024;
+	var MaxSize = 50 * 1024;
+	var ActualSize = h.ResponseBody.length;
+
+	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
+
+
 });
