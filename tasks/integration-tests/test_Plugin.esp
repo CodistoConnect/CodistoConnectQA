@@ -49,8 +49,101 @@ QUnit.test('PluginInstall', function(assert){
 
 	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
 
+	//Write out file using response body, extract it and compare that file structure is what is expected
+	var PluginFile = File.OpenTemporaryFile("plugin", "bw");
+	PluginFile.Write(h.ResponseBody);
+	PluginFile.Close;
+
+	//Get Unique generated filename and create a matching directory that we can extract into for temp work
+	var PluginFileName = PluginFile.FileName.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+	File.MakeDirectory(PluginFileName + "_tmpdir");
+	var TempDir = PluginFileName + "_tmpdir";
+
+	var FCGIURL = "fastcgi://127.0.0.1:6973/untar?FILE=" + encodeURIComponent(Application.BONDI_APPROOT +  PluginFileName) + "&DIR=" + encodeURIComponent(Application.BONDI_APPROOT + TempDir);
+	var FCGIReq = new FastCGIClient();
+	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.Send();
+
+	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
+
+	var ExpectedPaths = {
+			"app/" : true,
+			"app/code/" : true,
+			"app/code/community/" : true,
+			"app/code/community/Codisto/" : true,
+			"app/code/community/Codisto/Sync/" : true,
+			"app/code/community/Codisto/Sync/Controller/" : true,
+			"app/code/community/Codisto/Sync/Controller/BaseController.php" : true,
+			"app/code/community/Codisto/Sync/Controller/Router.php" : true,
+			"app/code/community/Codisto/Sync/Ebaypayment/" : true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/" : true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" : true,
+			"app/code/community/Codisto/Sync/Helper/" : true,
+			"app/code/community/Codisto/Sync/Helper/Data.php" : true,
+			"app/code/community/Codisto/Sync/Model/" : true,
+			"app/code/community/Codisto/Sync/Model/Indexer/" : true,
+			"app/code/community/Codisto/Sync/Model/Indexer/Ebay.php" : true,
+			"app/code/community/Codisto/Sync/Model/Observer.php" : true,
+			"app/code/community/Codisto/Sync/Model/Resource/" : true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/" : true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/Setup.php" : true,
+			"app/code/community/Codisto/Sync/Model/Sync.php" : true,
+			"app/code/community/Codisto/Sync/Test/" : true,
+			"app/code/community/Codisto/Sync/Test/Config/" : true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/" : true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/" : true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/Config.yaml" : true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/" : true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/Config.yaml" : true,
+			"app/code/community/Codisto/Sync/Test/Plugin/" : true,
+			"app/code/community/Codisto/Sync/Test/Plugin/Plugin.php" : true,
+			"app/code/community/Codisto/Sync/controllers/" : true,
+			"app/code/community/Codisto/Sync/controllers/CodistoController.php" : true,
+			"app/code/community/Codisto/Sync/controllers/IndexController.php" : true,
+			"app/code/community/Codisto/Sync/controllers/SyncController.php" : true,
+			"app/code/community/Codisto/Sync/data/" : true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/" : true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/data-install-1.1.136.php" : true,
+			"app/code/community/Codisto/Sync/etc/" : true,
+			"app/code/community/Codisto/Sync/etc/adminhtml.xml" : true,
+			"app/code/community/Codisto/Sync/etc/config.xml" : true,
+			"app/code/community/Codisto/Sync/sql/" : true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/" : true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-1.1.136.php" : true,
+			"app/design/" : true,
+			"app/design/ebay/" : true,
+			"app/design/ebay/README" : true,
+			"app/etc/" : true,
+			"app/etc/modules/" : true,
+			"app/etc/modules/Codisto_Sync.xml" : true,
+			"package.xml" : true
+	}
+
+	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
+	var Index = (PluginFileName + "_tmpdir").length + 1;
+
+	Dir.Listing(PluginFileName + "_tmpdir", File.Recursive).map(function(directory) {
+
+		var Path = directory.Path.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+		Path = Path.substring(Index, Path.length);
+
+		var DynamicPath = /(\d.){2}\d+/.test(Path);
+		if(DynamicPath) {
+			/// might get the version node out of the package.xml and replace above ... for now just bypass
+		} else {
+					assert.ok((Path in ExpectedPaths), "Found unexpected file - " + Path);
+		}
+
+
+
+	});
+
+	//now delete the downloaded plugin and the associated directory
+
+
 });
 
+/*
 QUnit.test('PluginResellerInstall', function(assert){
 
 	var h = new HttpClient();
@@ -70,3 +163,4 @@ QUnit.test('PluginResellerInstall', function(assert){
 
 
 });
+*/
