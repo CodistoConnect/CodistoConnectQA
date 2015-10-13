@@ -117,16 +117,10 @@ if [[ $STASHPOP ]]; then
 
 fi
 
-#Save current SHA1 hash for QA repo
-cd $SCRIPTPATH
-QASHA1=`git rev-parse HEAD`
-
-#Save current SHA1 hash for CodistoConnect repo
+#Save current SHA1 for CodistoConnect repo
 cd $PLUGINPATH
 SHA1=`git rev-parse HEAD`
 SDATE=`date +%Y-%m-%d:%H:%M:%S`
-
-
 
 logger -s "Current plugin will be built from SHA1 $SHA1"
 
@@ -356,13 +350,11 @@ if [ -z ${TEST} ]; then
 else
 
 	logger -s "Restoring system state after test run"
-	#reset filesystem state as we were only testing (its OK as the plugin builder only has one child so only testing or legitimate building can happen at once)
-	cd $PLUGINPATH && git reset --hard HEAD
-
-	#also restore the example-config in CodistoConnectQA repo
-	#this SHA is the sha of the QA
-	cd $SCRIPTPATH && git checkout $QASHA1 tasks/plugin/example-config.php
+	#restore filesystem state as we were only testing (its OK as the plugin builder only has one child so only testing or legitimate building can happen at once)
+	cd $PLUGINPATH && git clean -qfdx
 fi
+
+
 
 #Leave plugin version and path to plugin as last line in STDOUT to be captured
 echo "$PLUGINVERSION~~$PLUGINFNAME"

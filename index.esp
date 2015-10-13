@@ -14,6 +14,11 @@ else if(/^\/linting\//.test(Request.ServerVariables.URL)) {
 	Server.Execute("/tasks/linting/index.esp");
 	Response.End();
 }
+else if(/^\/integration-tests\//.test(Request.ServerVariables.URL)) {
+
+	Server.Execute("/tasks/integration-tests/tests.esp");
+	Response.End();
+}
 else if(/^\/demo\//.test(Request.ServerVariables.URL)) {
 
 
@@ -45,4 +50,3 @@ else {
 	Server.Execute("/tasks/static/index.esp");
 	Response.End();
 }
-
