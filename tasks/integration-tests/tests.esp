@@ -43,7 +43,7 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 						[
 							{
 								"fallback": "Summary - " + JSON.stringify(ReportSummary),
-								"pretext": "qa.codisto.com - Integration tests passed",
+								"pretext": "qa.codisto.com - Integration tests FAILED",
 								"color":"#62CF6F",
 								"fields":
 									[
@@ -69,7 +69,7 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 						[
 							{
 								"fallback": "Summary - " + JSON.stringify(ReportSummary),
-								"pretext": "qa.codisto.com - Integration tests passed",
+								"pretext": "qa.codisto.com - Integration tests PASSED",
 								"color":"#62CF6F",
 								"fields":
 									[

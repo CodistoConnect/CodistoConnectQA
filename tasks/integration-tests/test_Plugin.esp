@@ -1,6 +1,7 @@
 QUnit.module('Plugin');
 
 //Internal test to make sure FCGI is working correctly
+/*
 QUnit.test('PluginBuiltFCGIProto', function(assert){
 
 	var Branch = "master";
@@ -31,16 +32,17 @@ QUnit.test('PluginBuiltFCGIProto', function(assert){
 	assert.ok(ValidVersion, "Version was not in expected n.n.n.n format - was " + PluginVersion);
 
 });
+*/
 
 //Download plugin via HTTP and confirm everything is OK
 QUnit.test('PluginInstall', function(assert){
 
 	var h = new HttpClient();
-	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1");
+	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1&test=1");
 	h.SetRequestHeader("X-Codisto-Build", "1");
 	h.Send();
 
-	assert.ok(h.Status == 200);
+	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
 
 	//check plugin size is OK
 	var MinSize = 20 * 1024;
@@ -67,56 +69,69 @@ QUnit.test('PluginInstall', function(assert){
 	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
 
 	var ExpectedPaths = {
-			"app/" : true,
-			"app/code/" : true,
-			"app/code/community/" : true,
-			"app/code/community/Codisto/" : true,
-			"app/code/community/Codisto/Sync/" : true,
-			"app/code/community/Codisto/Sync/Controller/" : true,
-			"app/code/community/Codisto/Sync/Controller/BaseController.php" : true,
-			"app/code/community/Codisto/Sync/Controller/Router.php" : true,
-			"app/code/community/Codisto/Sync/Ebaypayment/" : true,
-			"app/code/community/Codisto/Sync/Ebaypayment/Model/" : true,
-			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" : true,
-			"app/code/community/Codisto/Sync/Helper/" : true,
-			"app/code/community/Codisto/Sync/Helper/Data.php" : true,
-			"app/code/community/Codisto/Sync/Model/" : true,
-			"app/code/community/Codisto/Sync/Model/Indexer/" : true,
-			"app/code/community/Codisto/Sync/Model/Indexer/Ebay.php" : true,
-			"app/code/community/Codisto/Sync/Model/Observer.php" : true,
-			"app/code/community/Codisto/Sync/Model/Resource/" : true,
-			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/" : true,
-			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/Setup.php" : true,
-			"app/code/community/Codisto/Sync/Model/Sync.php" : true,
-			"app/code/community/Codisto/Sync/Test/" : true,
-			"app/code/community/Codisto/Sync/Test/Config/" : true,
-			"app/code/community/Codisto/Sync/Test/Config/Config/" : true,
-			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/" : true,
-			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/Config.yaml" : true,
-			"app/code/community/Codisto/Sync/Test/Config/expectations/" : true,
-			"app/code/community/Codisto/Sync/Test/Config/expectations/Config.yaml" : true,
-			"app/code/community/Codisto/Sync/Test/Plugin/" : true,
-			"app/code/community/Codisto/Sync/Test/Plugin/Plugin.php" : true,
-			"app/code/community/Codisto/Sync/controllers/" : true,
-			"app/code/community/Codisto/Sync/controllers/CodistoController.php" : true,
-			"app/code/community/Codisto/Sync/controllers/IndexController.php" : true,
-			"app/code/community/Codisto/Sync/controllers/SyncController.php" : true,
-			"app/code/community/Codisto/Sync/data/" : true,
-			"app/code/community/Codisto/Sync/data/codisto_setup/" : true,
-			"app/code/community/Codisto/Sync/data/codisto_setup/data-install-1.1.136.php" : true,
-			"app/code/community/Codisto/Sync/etc/" : true,
-			"app/code/community/Codisto/Sync/etc/adminhtml.xml" : true,
-			"app/code/community/Codisto/Sync/etc/config.xml" : true,
-			"app/code/community/Codisto/Sync/sql/" : true,
-			"app/code/community/Codisto/Sync/sql/codisto_setup/" : true,
-			"app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-1.1.136.php" : true,
-			"app/design/" : true,
-			"app/design/ebay/" : true,
-			"app/design/ebay/README" : true,
-			"app/etc/" : true,
-			"app/etc/modules/" : true,
-			"app/etc/modules/Codisto_Sync.xml" : true,
-			"package.xml" : true
+			"app/" :  true,
+			"app/code/" :  true,
+			"app/code/community/" :  true,
+			"app/code/community/Codisto/" :  true,
+			"app/code/community/Codisto/Sync/" :  true,
+			"app/code/community/Codisto/Sync/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Controller/BaseController.php" :  true,
+			"app/code/community/Codisto/Sync/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Helper/" :  true,
+			"app/code/community/Codisto/Sync/Helper/Data.php" :  true,
+			"app/code/community/Codisto/Sync/Model/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/Ebay.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Observer.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/Setup.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/AdminHtml.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/testCodistoCoreConfig.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/Plugin.php" :  true,
+			"app/code/community/Codisto/Sync/Test/README" :  true,
+			"app/code/community/Codisto/Sync/controllers/" :  true,
+			"app/code/community/Codisto/Sync/controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/data/" :  true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/data-install-1.1.38.php" :  true,
+			"app/code/community/Codisto/Sync/etc/" :  true,
+			"app/code/community/Codisto/Sync/etc/adminhtml.xml" :  true,
+			"app/code/community/Codisto/Sync/etc/config.xml" :  true,
+			"app/code/community/Codisto/Sync/sql/" :  true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/" :  true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-1.1.38.php" :  true,
+			"app/design/" :  true,
+			"app/design/ebay/" :  true,
+			"app/design/ebay/README" :  true,
+			"app/etc/" :  true,
+			"app/etc/modules/" :  true,
+			"app/etc/modules/Codisto_Sync.xml" :  true,
+			"package.xml" :  true,
 	}
 
 	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
@@ -142,6 +157,8 @@ QUnit.test('PluginInstall', function(assert){
 
 
 });
+
+
 
 /*
 QUnit.test('PluginResellerInstall', function(assert){
