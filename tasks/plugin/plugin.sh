@@ -238,7 +238,7 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 	else
 
 		logger -s "Not pushing development - integration tests running"
-		
+
 	fi
 
 	cd $PLUGINPATH
@@ -344,7 +344,20 @@ fi
 
 logger -s "Plugin build completed"
 
-#Leave a note about build
-echo "extension built on $SDATE (branch [$BRANCH] - sha1[$SHA1]) - Extension package is -> $PLUGINFNAME">> $SCRIPTPATH/extensionbuildlog.txt
+if [ -z ${TEST} ]; then
+	#Leave a note about build
+	echo "extension built on $SDATE (branch [$BRANCH] - sha1[$SHA1]) - Extension package is -> $PLUGINFNAME">> $SCRIPTPATH/extensionbuildlog.txt
+else
+
+	logger -s "Restoring system state after test run"
+	#reset filesystem state as we were only testing (its OK as the plugin builder only has one child so only testing or legitimate building can happen at once)
+	cd $PLUGINPATH && git reset --hard HEAD
+
+	#also restore the example-config in CodistoConnectQA repo
+	cd $SCRIPTPATH && git checkout $SHA1 tasks/plugin/example-config.php
+fi
+
+
+
 #Leave plugin version and path to plugin as last line in STDOUT to be captured
 echo "$PLUGINVERSION~~$PLUGINFNAME"
