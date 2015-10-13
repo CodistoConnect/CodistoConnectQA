@@ -179,7 +179,21 @@ if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
 	}
 }
 
+
 //subscribe to various github webhooks
+Github.Hooks.push(/^\/plugin\/integration-tests/, Secret, function(Hook){
+
+	if(Hook.branch == "master") {
+			Debug.LogInfo("Executing integration-tests");
+			Server.Execute("/tasks/integration-tests/tests.esp");
+	}
+
+	Response.End();
+
+});
+
+
+
 Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 
 	if(Hook.branch == "development" || Hook.branch == "master") {

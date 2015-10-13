@@ -178,7 +178,7 @@ QUnit.test('PluginInstall', function(assert){
 
 
 /*
-//Test reseller
+//Test reseller -- probably just copy / pasta for now and check for reseller node in the xml file
 QUnit.test('PluginResellerInstall', function(assert){
 
 	var h = new HttpClient();

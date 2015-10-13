@@ -11,7 +11,6 @@
 
 	var ReceiveHooks = function() {
 
-
 		if(Request.IsSecure() && "HTTP_X_HUB_SIGNATURE" in Request.ServerVariables && Request.ServerVariables.HTTP_X_HUB_SIGNATURE
 			&& "HTTP_X_GITHUB_EVENT" in Request.ServerVariables && Request.ServerVariables.HTTP_X_GITHUB_EVENT) {
 
@@ -23,12 +22,10 @@
 
 					for(var Callback of Callbacks.push) {
 
-
 						if(Callback.path.test(Request.ServerVariables.URL)) {
 
 							//TODO check secret .. decrypt hex digest and compare (after extension stuff is working)
 							var Secret = Callback.secret;
-
 
 							var CommitDetails = ("commits" in Request.Form && Request.Form["commits"] && Request.Form["commits"].length > 0)
 								? {sha1: Request.Form.commits[Request.Form["commits"].length -1 ].id, message: Request.Form.commits[Request.Form["commits"].length -1].message} : {	sha1: "", message: ""};
@@ -362,4 +359,3 @@
 	return Github;
 
 })();
-

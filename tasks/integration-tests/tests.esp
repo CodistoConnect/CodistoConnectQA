@@ -22,9 +22,14 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 
 		var SlackRoomToken = Application.SLACKROOMTOKEN;
 
-		//restore STDOUT response writing
-		Response.Write = PlaceholderResponseWrite;
-		Response.Write(ReportXML);
+		if("cli" in Application && Application.cli) {
+
+			//restore STDOUT response writing
+			Response.Write = PlaceholderResponseWrite;
+			Response.Write(ReportXML);
+		}
+
+
 
 		if(!isSlack) {
 			return;
@@ -95,6 +100,7 @@ var PlaceholderResponseWrite = Response.Write;
 //Suppress any output while tests are running
 Response.Write = function(str){ return; };
 
+Debug.LogInfo("Tests started");
 for(var i = 0, len = listing.length; i < len; i++)
 {
 	var elem = listing[i];
@@ -103,5 +109,6 @@ for(var i = 0, len = listing.length; i < len; i++)
 		Server.Include(elem.Path);
 	}
 }
+Debug.LogInfo("Tests finished");
 
 QUnit.jUnitReportSend(ReportSummary, true);
