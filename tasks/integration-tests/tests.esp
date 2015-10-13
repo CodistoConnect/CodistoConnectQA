@@ -22,7 +22,7 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 
 		var SlackRoomToken = Application.SLACKROOMTOKEN;
 
-		if("cli" in Application && Application.cli) {
+		if("CLI" in Application && Application["CLI"]) {
 
 			//restore STDOUT response writing
 			Response.Write = PlaceholderResponseWrite;
@@ -101,6 +101,7 @@ var PlaceholderResponseWrite = Response.Write;
 Response.Write = function(str){ return; };
 
 Debug.LogInfo("Tests started");
+
 for(var i = 0, len = listing.length; i < len; i++)
 {
 	var elem = listing[i];

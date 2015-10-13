@@ -351,10 +351,10 @@ else
 
 	logger -s "Restoring system state after test run"
 	#restore filesystem state as we were only testing (its OK as the plugin builder only has one child so only testing or legitimate building can happen at once)
-	cd $PLUGINPATH && git clean -qfdx
+
+  logger -s "PLUGIN PATH IS $PLUGINPATH"
+	cd $PLUGINPATH && git reset --hard && git clean -dfx --force
 fi
-
-
 
 #Leave plugin version and path to plugin as last line in STDOUT to be captured
 echo "$PLUGINVERSION~~$PLUGINFNAME"
