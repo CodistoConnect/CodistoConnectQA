@@ -142,21 +142,12 @@ QUnit.test('PluginInstall', function(assert){
 			"package.xml" :  true,
 	}
 
-	Debug.LogInfo("Qunit.testState is " + JSON.stringify(QUnit.testState));
-	//"PluginVersion":"1.1.59"
-
 	var Minor = parseInt(QUnit.testState["PluginVersion"].split(".")[2], 10) + 1;
-	Debug.LogInfo("Minor is " + Minor);
-
 	var PluginVersion = "1.1." + Minor;
-
-	Debug.LogInfo("PluginVersion is now " + PluginVersion);
 
 	//Make sure the install files are present
 	ExpectedPaths["app/code/community/Codisto/Sync/data/codisto_setup/data-install-" + PluginVersion + ".php"] = true;
 	ExpectedPaths["app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-" + PluginVersion + ".php"] = true;
-
-	Debug.LogInfo(JSON.stringify(ExpectedPaths));
 
 	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
 	var Index = (PluginFileName + "_tmpdir").length + 1;
@@ -166,24 +157,20 @@ QUnit.test('PluginInstall', function(assert){
 		var Path = directory.Path.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
 		Path = Path.substring(Index, Path.length);
 
-		//make sure file exists
+		//make sure path exists
 		assert.ok((Path in ExpectedPaths), "Found unexpected file - " + Path);
 
-		//Response.Write(JSON.stringify(File.Stat(Path)));
-		//Debug.LogInfo(JSON.stringify(File.Stat(Path)));
-
-		//Debug.LogInfo("Size is " +  File.Stat(Path).Size);
-
 		if(File.IsFile(Path)){
+
 			//make sure that the file size is not zero
 			assert.ok(File.Stat(Path).Size > 0, "Damaged file in plugin , size of zero - " + Path);
 		}
 
-
-
 	});
 
 	//now delete the downloaded plugin and the associated directory
+	File.Delete(PluginFileName);
+	File.Delete(PluginFileName + "_tmpdir");
 
 
 });
