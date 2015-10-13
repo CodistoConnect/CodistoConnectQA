@@ -77,15 +77,17 @@ logger -s "STASHPOP=$STASHPOP"
 logger -s "SHA1=$SHA1"
 logger -s "RESELLER=$RESELLER"
 logger -s "GITHUBTOKEN=$GITHUBTOKEN"
-
+logger -s "TEST=$TEST"
 
 cd $PLUGINPATH
 
 logger -s "CURRENT SHA1=$(git rev-parse HEAD)"
 
 if [ -n $STASHPOP ]; then
-	logger -s "STASHING"
-	git stash
+	if [ -z ${TEST} ]; then
+		logger -s "STASHING"
+		git stash
+	fi
 fi
 
 #Make sure all remotes are up to date before we pull or checkout SHA's which might not exist
@@ -104,11 +106,14 @@ else
 	logger -s "No SHA1 was specified so checking out $BRANCH and pulling"
 	git checkout $BRANCH
 	git pull
+
 fi
 
 if [[ $STASHPOP ]]; then
 
-	git stash pop
+	if [ -z ${TEST} ]; then
+		git stash pop
+	fi
 
 fi
 
@@ -150,7 +155,10 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 	mv "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/$DATAINSTALLFNAME" "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
 
 	logger -s "Commiting change to data-install"
-	git add "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php" -f
+
+	if [ -z ${TEST} ]; then
+		git add "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php" -f
+	fi
 
 	#Lets update mysql4-install in code/community/Codisto/Sync/sql/codisto_setup must have matching file suffix to the plugin version so let's rename it to match
 
@@ -163,64 +171,76 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 	mv "$PLUGINPATH/code/community/Codisto/Sync/sql/codisto_setup/$MYSQLINSTALLFNAME" "$PLUGINPATH/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-$PLUGINVERSION.php"
 	logger -s "Commiting change to mysql4-install"
 
-	git add "$PLUGINPATH/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-$PLUGINVERSION.php" --force
+	if [ -z ${TEST} ]; then
+		git add "$PLUGINPATH/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-$PLUGINVERSION.php" --force
+	fi
 
 	#Generate a new CHANGELOG.md and add it
 	logger -s "Generating new changelog"
 	github_changelog_generator --token $GITHUBTOKEN
-	git add CHANGELOG.md --force
+
+	if [ -z ${TEST} ]; then
+		git add CHANGELOG.md --force
+	fi
 
 	#Update config.xml with new plugin version
 	sed -ri "/1/s/([0-9]+.[0-9]+.[0-9]+)/$PLUGINVERSION/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
-	logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
-	git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
-
-	logger -s "Committing version bumped files"
-	git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
-
-	#Update master
-	git branch -D master
-	git checkout -b master
-
 
 	if [ -z ${TEST} ]; then
-			logger -s "Pusing master"
-			#git push origin master --force
+
+		logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
+		git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
+
+		logger -s "Committing version bumped files"
+		git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
+
+		#Update master
+		git branch -D master
+		git checkout -b master
+
+		logger -s "Pusing master"
+		git push origin master --force
 	else
-			logger -s "Not pushing master - integration tests running"
+		logger -s "Not pushing master - integration tests running"
+
 	fi
 
-	#Create a new tag with the plugin version
-	git tag -d "$PLUGINVERSION"
-	git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
-
 	if [ -z ${TEST} ]; then
+
+			#Create a new tag with the plugin version
+			git tag -d "$PLUGINVERSION"
+			git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
 			logger -s "Pusing tag"
-			#git push origin "$PLUGINVERSION" --force
+			git push origin "$PLUGINVERSION" --force
+
 	else
+
 			logger -s "Not pushing tag - integration tests running"
+
 	fi
-
-
-
-	#checkout development branch of the specific SHA
-	logger -s "Checking out development branch with sha of $DEVSHA"
-	git checkout $DEVSHA --force
-	git merge "$PLUGINVERSION" --no-edit
-
-	#we are in a detached state, kill development and recreate
-	git branch -D development
-	git checkout -b development
 
   if [ -z ${TEST} ]; then
+
+			#checkout development branch of the specific SHA
+			logger -s "Checking out development branch with sha of $DEVSHA"
+			git checkout $DEVSHA --force
+			git merge "$PLUGINVERSION" --no-edit
+
+			#we are in a detached state, kill development and recreate
+			git branch -D development
+			git checkout -b development
+
 			logger -s "Pusing development"
-			#git push origin development --force
+			git push origin development --force
+
+			#We are finished with development so back to the SHA1 that was checked out for master
+		  git checkout master
 	else
+
 		logger -s "Not pushing development - integration tests running"
+		
 	fi
 
-	#We are finished with development so back to the SHA1 that was checked out for master
-	git checkout master
 	cd $PLUGINPATH
 
 fi
