@@ -29,8 +29,6 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 			Response.Write(ReportXML);
 		}
 
-
-
 		if(!isSlack) {
 			return;
 		}
@@ -112,4 +110,4 @@ for(var i = 0, len = listing.length; i < len; i++)
 }
 Debug.LogInfo("Tests finished");
 
-QUnit.jUnitReportSend(ReportSummary, true);
+QUnit.jUnitReportSend(ReportSummary, false);
