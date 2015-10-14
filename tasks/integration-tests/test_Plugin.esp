@@ -43,10 +43,8 @@ QUnit.test('PluginBuiltFCGIProto', function(assert){
 });
 
 
-
-
 //Download plugin via HTTP and confirm everything is OK
-/*
+
 QUnit.test('PluginInstall', function(assert){
 
 	var h = new HttpClient();
@@ -175,9 +173,6 @@ QUnit.test('PluginInstall', function(assert){
 
 
 });
-*/
-
-
 
 //Download plugin via HTTP and confirm everything is OK for reseller branded plugin
 
@@ -280,7 +275,10 @@ QUnit.test('PluginResellerInstall', function(assert){
 			"package.xml" :  true,
 	}
 
-	var PluginVersion = QUnit.testState["PluginVersion"];
+	//Doing a Reseller build never bumps the version .. only adds the XML node so we shouldn't be looking for an incremented version
+
+	var PluginTuple = QUnit.testState["PluginVersion"].split(".");
+	var PluginVersion = [PluginTuple[0], PluginTuple[1], --PluginTuple[2]].join(".");
 	Debug.LogInfo("Looking for PluginVersion " + PluginVersion);
 
 	//Make sure the install files are present
@@ -289,8 +287,6 @@ QUnit.test('PluginResellerInstall', function(assert){
 
 	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
 	var Index = (PluginFileName + "_tmpdir").length + 1;
-
-	//Debug.LogInfo(JSON.stringify(ExpectedPaths));
 
 	Dir.Listing(PluginFileName + "_tmpdir", File.Recursive).map(function(directory) {
 
