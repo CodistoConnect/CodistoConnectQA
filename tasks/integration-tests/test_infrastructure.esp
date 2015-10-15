@@ -1,0 +1,27 @@
+QUnit.module('Infrastructure');
+
+//Make sure DNS is OK
+QUnit.test('DNS', function(assert){
+
+  [
+  "codisto.com",
+  "cdn.codisto.com",
+  "email.codisto.com",
+  "converter.codisto.com",
+  "aws-router-us-w.codisto.com",
+  "aws-frontend-us-w-1.codisto.com",
+  "ns3.codisto.com",
+  "ebay.codisto.com",
+  "mobile.codisto.com",
+  "api.codisto.com",
+  "ui.codisto.com",
+  "www.codisto.com",
+  "mobile.codisto.com",
+  "secure.codisto.com"
+  ].forEach(function(Domain){
+
+      var IP = DNS.A(Domain)
+      assert.ok(IP, "Failed to resolve domain " +  Domain);
+
+  });
+});
