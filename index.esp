@@ -1,4 +1,3 @@
-
 if(/^\/graph\//.test(Request.ServerVariables.URL)) {
 
 	Server.Execute("/tasks/graph/index.esp");
@@ -45,4 +44,3 @@ else {
 	Server.Execute("/tasks/static/index.esp");
 	Response.End();
 }
-
