@@ -1,0 +1,332 @@
+QUnit.module('Plugin');
+
+QUnit.testState = {
+
+}
+
+
+//Internal test to make sure FCGI is working correctly
+QUnit.test('PluginBuiltFCGIProto', function(assert){
+
+	var Branch = "master";
+	var ResellerKey = 'n/a';
+	var SHA1 = 'n/a';
+	var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
+
+	var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild/manual?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken + "&TEST=1&download=1";
+
+	var FCGIReq = new FastCGIClient();
+	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.Send();
+
+	Status = FCGIReq.Status;
+	assert.equal(200, Status, "Plugin build fastcgi status was " + Status);
+
+	assert.ok(FCGIReq.ResponseBody.length > 0, " ResponseBody length was 0");
+
+	var ResponseBody = FCGIReq.ResponseBody.split("\n");
+	var PluginDetails = ResponseBody[ResponseBody.length - 2].split("~~");
+	var PluginVersion = PluginDetails[0];
+	var PluginPath = PluginDetails[1];
+
+	assert.notEqual(PluginVersion, NaN, "Plugin version was NaN");
+	assert.notEqual(PluginPath, NaN, "Resulting plugin path was NaN");
+
+	Debug.LogInfo("PLUGIN VERSION IS " + PluginVersion);
+
+	var ValidVersion = /(\d.){2}\d+$/.test(PluginVersion);
+	assert.ok(ValidVersion, "Version was not in expected n.n.n.n format - was " + PluginVersion);
+
+	QUnit.testState["PluginVersion"] = PluginVersion;
+	Debug.LogInfo("Saving PluginVersion as " + JSON.stringify(QUnit.testState));
+
+});
+
+
+//Download plugin via HTTP and confirm everything is OK
+
+QUnit.test('PluginInstall', function(assert){
+
+	var h = new HttpClient();
+	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1&test=1");
+	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.Send();
+
+	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
+
+	//check plugin size is OK
+	var MinSize = 20 * 1024;
+	var MaxSize = 50 * 1024;
+	var ActualSize = h.ResponseBody.length;
+
+	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
+
+	//Write out file using response body, extract it and compare that file structure is what is expected
+	var PluginFile = File.OpenTemporaryFile("plugin", "bw");
+	PluginFile.Write(h.ResponseBody);
+	PluginFile.Close;
+
+	//Get Unique generated filename and create a matching directory that we can extract into for temp work
+	var PluginFileName = PluginFile.FileName.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+	File.MakeDirectory(PluginFileName + "_tmpdir");
+	var TempDir = PluginFileName + "_tmpdir";
+
+	var FCGIURL = "fastcgi://127.0.0.1:6973/untar?FILE=" + encodeURIComponent(Application.BONDI_APPROOT +  PluginFileName) + "&DIR=" + encodeURIComponent(Application.BONDI_APPROOT + TempDir);
+	var FCGIReq = new FastCGIClient();
+	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.Send();
+
+	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
+
+	var ExpectedPaths = {
+			"app/" :  true,
+			"app/code/" :  true,
+			"app/code/community/" :  true,
+			"app/code/community/Codisto/" :  true,
+			"app/code/community/Codisto/Sync/" :  true,
+			"app/code/community/Codisto/Sync/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Controller/BaseController.php" :  true,
+			"app/code/community/Codisto/Sync/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Helper/" :  true,
+			"app/code/community/Codisto/Sync/Helper/Data.php" :  true,
+			"app/code/community/Codisto/Sync/Model/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/Ebay.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Observer.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/Setup.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/AdminHtml.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/testCodistoCoreConfig.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/Plugin.php" :  true,
+			"app/code/community/Codisto/Sync/Test/README" :  true,
+			"app/code/community/Codisto/Sync/controllers/" :  true,
+			"app/code/community/Codisto/Sync/controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/data/" :  true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
+			"app/code/community/Codisto/Sync/etc/" :  true,
+			"app/code/community/Codisto/Sync/etc/adminhtml.xml" :  true,
+			"app/code/community/Codisto/Sync/etc/config.xml" :  true,
+			"app/code/community/Codisto/Sync/sql/" :  true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/" :  true,
+			"app/design/" :  true,
+			"app/design/ebay/" :  true,
+			"app/design/ebay/README" :  true,
+			"app/etc/" :  true,
+			"app/etc/modules/" :  true,
+			"app/etc/modules/Codisto_Sync.xml" :  true,
+			"package.xml" :  true,
+	}
+
+	var PluginVersion = QUnit.testState["PluginVersion"];
+
+	//Make sure the install files are present
+	ExpectedPaths["app/code/community/Codisto/Sync/data/codisto_setup/data-install-" + PluginVersion + ".php"] = true;
+	ExpectedPaths["app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-" + PluginVersion + ".php"] = true;
+
+	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
+	var Index = (PluginFileName + "_tmpdir").length + 1;
+
+	Dir.Listing(PluginFileName + "_tmpdir", File.Recursive).map(function(directory) {
+
+		var Path = directory.Path.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+		Path = Path.substring(Index, Path.length);
+
+		//make sure path exists
+		assert.ok((Path in ExpectedPaths), "Found unexpected file - " + Path);
+
+		if(File.IsFile(Path)){
+
+			//make sure that the file size is not zero
+			assert.ok(File.Stat(Path).Size > 0, "Damaged file in plugin , size of zero - " + Path);
+		}
+
+	});
+
+	//now delete the downloaded plugin and the associated directory
+	File.Delete(PluginFileName);
+	File.Delete(PluginFileName + "_tmpdir");
+
+
+});
+
+//Download plugin via HTTP and confirm everything is OK for reseller branded plugin
+
+QUnit.test('PluginResellerInstall', function(assert){
+
+	var ResellerKey = "abc123";
+
+	var h = new HttpClient();
+	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1&test=1&resellerkey=" + ResellerKey);
+	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.Send();
+
+	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
+
+	//check plugin size is OK
+	var MinSize = 20 * 1024;
+	var MaxSize = 50 * 1024;
+	var ActualSize = h.ResponseBody.length;
+
+	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
+
+	//Write out file using response body, extract it and compare that file structure is what is expected
+	var PluginFile = File.OpenTemporaryFile("plugin", "bw");
+	PluginFile.Write(h.ResponseBody);
+	PluginFile.Close;
+
+	//Get Unique generated filename and create a matching directory that we can extract into for temp work
+	var PluginFileName = PluginFile.FileName.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+	File.MakeDirectory(PluginFileName + "_tmpdir");
+	var TempDir = PluginFileName + "_tmpdir";
+
+	var FCGIURL = "fastcgi://127.0.0.1:6973/untar?FILE=" + encodeURIComponent(Application.BONDI_APPROOT +  PluginFileName) + "&DIR=" + encodeURIComponent(Application.BONDI_APPROOT + TempDir);
+	var FCGIReq = new FastCGIClient();
+	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.Send();
+
+	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
+
+	var ExpectedPaths = {
+			"app/" :  true,
+			"app/code/" :  true,
+			"app/code/community/" :  true,
+			"app/code/community/Codisto/" :  true,
+			"app/code/community/Codisto/Sync/" :  true,
+			"app/code/community/Codisto/Sync/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Controller/BaseController.php" :  true,
+			"app/code/community/Codisto/Sync/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/" :  true,
+			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Helper/" :  true,
+			"app/code/community/Codisto/Sync/Helper/Data.php" :  true,
+			"app/code/community/Codisto/Sync/Model/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/" :  true,
+			"app/code/community/Codisto/Sync/Model/Indexer/Ebay.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Observer.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/" :  true,
+			"app/code/community/Codisto/Sync/Model/Resource/Mysql4/Setup.php" :  true,
+			"app/code/community/Codisto/Sync/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/AdminHtml.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config/expectations/testCodistoCoreConfig.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/Config.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/" :  true,
+			"app/code/community/Codisto/Sync/Test/Config/expectations/Config.yaml" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controller/Router.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Paymentmethod.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Model/Sync.php" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/" :  true,
+			"app/code/community/Codisto/Sync/Test/Plugin/Plugin.php" :  true,
+			"app/code/community/Codisto/Sync/Test/README" :  true,
+			"app/code/community/Codisto/Sync/controllers/" :  true,
+			"app/code/community/Codisto/Sync/controllers/CodistoController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/IndexController.php" :  true,
+			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
+			"app/code/community/Codisto/Sync/data/" :  true,
+			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
+			"app/code/community/Codisto/Sync/etc/" :  true,
+			"app/code/community/Codisto/Sync/etc/adminhtml.xml" :  true,
+			"app/code/community/Codisto/Sync/etc/config.xml" :  true,
+			"app/code/community/Codisto/Sync/sql/" :  true,
+			"app/code/community/Codisto/Sync/sql/codisto_setup/" :  true,
+			"app/design/" :  true,
+			"app/design/ebay/" :  true,
+			"app/design/ebay/README" :  true,
+			"app/etc/" :  true,
+			"app/etc/modules/" :  true,
+			"app/etc/modules/Codisto_Sync.xml" :  true,
+			"package.xml" :  true,
+	}
+
+	//Doing a Reseller build never bumps the version .. only adds the XML node so we shouldn't be looking for an incremented version
+
+	var PluginTuple = QUnit.testState["PluginVersion"].split(".");
+	var PluginVersion = [PluginTuple[0], PluginTuple[1], --PluginTuple[2]].join(".");
+	Debug.LogInfo("Looking for PluginVersion " + PluginVersion);
+
+	//Make sure the install files are present
+	ExpectedPaths["app/code/community/Codisto/Sync/data/codisto_setup/data-install-" + PluginVersion + ".php"] = true;
+	ExpectedPaths["app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-" + PluginVersion + ".php"] = true;
+
+	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
+	var Index = (PluginFileName + "_tmpdir").length + 1;
+
+	Dir.Listing(PluginFileName + "_tmpdir", File.Recursive).map(function(directory) {
+
+		var Path = directory.Path.replace(Application.BONDI_APPROOT.replace(/\/$/, ""), "");
+		Path = Path.substring(Index, Path.length);
+
+		//make sure path exists
+		assert.ok((Path in ExpectedPaths), "Found unexpected file - " + Path);
+
+		if(File.IsFile(Path)){
+
+			//make sure that the file size is not zero
+			assert.ok(File.Stat(Path).Size > 0, "Damaged file in plugin , size of zero - " + Path);
+		}
+
+	});
+
+	var ConfigFile = PluginFileName + "_tmpdir/app/code/community/Codisto/Sync/etc/config.xml"
+
+	//Open up the config.xml file and make sure there is a reseller node in it
+	var F = File.Open(ConfigFile, "rt");
+	var XmlArray = 	F.Read().split("\n")
+	F.Close();
+
+	var i = 0;
+
+	for( ; i < XmlArray.length ; i++) {
+		var Tag = /<resellerkey>(.+?)<\/resellerkey>/.test(XmlArray[i]);
+		if(Tag) {
+			break;
+		}
+	}
+
+	assert.ok(i != XmlArray.length, "No reseller key found in " + ConfigFile);
+	var TagValue = XmlArray[i].match(/<resellerkey>(.+?)<\/resellerkey>/)[1];
+
+	assert.equal(TagValue, ResellerKey, "Reseller key incorrect. Expecting " + ResellerKey + " found " + TagValue);
+
+	//now delete the downloaded plugin and the associated directory
+	File.Delete(PluginFileName);
+	File.Delete(PluginFileName + "_tmpdir");
+
+});

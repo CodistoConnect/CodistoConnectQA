@@ -14,7 +14,7 @@ if(/\./.test(FileName))
 
 Request.IsAjax = /^XMLHttpRequest$/.test(Request.ServerVariables["HTTP_X_REQUESTED_WITH"]);
 
-if(/^html|htm$/i.test(FileExtension) || (/^\/(?:$|\?)/.test(Request.URL)))
+if((FileExtension && /^html|htm$/i.test(FileExtension)) || (/^\/(?:$|\?)/.test(Request.URL)))
 {
 	if(!/^on$/i.test(Request.ServerVariables.HTTPS))
 	{
