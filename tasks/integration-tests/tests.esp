@@ -37,29 +37,30 @@ QUnit.jUnitReportSend = function(report, isSlack) {
 
 		if(ReportSummary.failed > 0) {
 
-			SlackMessage =	{
-				"room_token" : SlackRoomToken,
-				"request" :
-				{
-					"username": "CodistoConnect",
-					"attachments":
-						[
-							{
-								"fallback": "Summary - " + JSON.stringify(ReportSummary),
-								"pretext": "qa.codisto.com - Integration tests FAILED",
-								"color":"#62CF6F",
-								"fields":
-									[
-										{
-											"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
-											"value": ReportXML,
-											"short":false
-										}
-									]
-							}
-						]
-				}
-			};
+			SlackMessage =  {
+            "room_token" : SlackRoomToken,
+            "request" :
+            {
+                    "username": "CodistoConnect",
+                    "attachments":
+                            [
+                                    {
+                                            "fallback": "Summary - " + JSON.stringify(ReportSummary),
+                                            "pretext": "<!everyone> qa.codisto.com - Integration tests FAILED !! FIX THEM",
+                                            "color":"danger",
+                                            "fields":
+                                                    [
+                                                            {
+                                                                    "title":"Summary of integration tests " + JSON.stringify(ReportSummary),
+                                                                    "value": "\n" + ReportXML,
+                                                                    "short":false
+                                                            }
+                                                    ]
+                                    }
+                            ]
+            }
+    };
+
 
 		} else {
 
