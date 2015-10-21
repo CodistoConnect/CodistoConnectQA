@@ -20,76 +20,76 @@ QUnit.jUnitReport = function(result) {
 
 QUnit.jUnitReportSend = function(report, isSlack) {
 
-		var SlackRoomToken = Application.SLACKROOMTOKEN;
+	var SlackRoomToken = Application.SLACKROOMTOKEN;
 
-		if("CLI" in Application && Application["CLI"]) {
+	if("CLI" in Application && Application["CLI"]) {
 
-			//restore STDOUT response writing
-			Response.Write = PlaceholderResponseWrite;
-			Response.Write(ReportXML);
-		}
+		//restore STDOUT response writing
+		Response.Write = PlaceholderResponseWrite;
+		Response.Write(ReportXML);
+	}
 
-		if(!isSlack) {
-			return;
-		}
+	if(!isSlack) {
+		return;
+	}
 
-		var SlackMessage;
+	var SlackMessage;
 
-		if(ReportSummary.failed > 0) {
+	if(ReportSummary.failed > 0) {
 
-			SlackMessage =  {
-            "room_token" : SlackRoomToken,
-            "request" :
-            {
-                    "username": "CodistoConnect",
-                    "attachments":
-                            [
-                                    {
-                                            "fallback": "Summary - " + JSON.stringify(ReportSummary),
-                                            "pretext": "<!everyone> qa.codisto.com - Integration tests FAILED !! FIX THEM",
-                                            "color":"danger",
-                                            "fields":
-                                                    [
-                                                            {
-                                                                    "title":"Summary of integration tests " + JSON.stringify(ReportSummary),
-                                                                    "value": "\n" + ReportXML,
-                                                                    "short":false
-                                                            }
-                                                    ]
-                                    }
-                            ]
-            }
-    };
-
-
-		} else {
-
-			SlackMessage =	{
-				"room_token" : SlackRoomToken,
-				"request" :
-				{
-					"username": "CodistoConnect",
-					"attachments":
+		SlackMessage =  {
+			"room_token" : SlackRoomToken,
+			"request" :
+			{
+				"username": "CodistoConnect",
+				"attachments":
+				[
+					{
+						"fallback": "Summary - " + JSON.stringify(ReportSummary),
+						"pretext": "<!everyone> qa.codisto.com - Integration tests FAILED !! FIX THEM",
+						"color":"danger",
+						"fields":
 						[
 							{
-								"fallback": "Summary - " + JSON.stringify(ReportSummary),
-								"pretext": "qa.codisto.com - Integration tests PASSED",
-								"color":"#62CF6F",
-								"fields":
-									[
-										{
-											"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
-											"value": "Integration tests passed, carry on",
-											"short":false
-										}
-									]
+								"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
+								"value": "\n" + ReportXML,
+								"short":false
 							}
 						]
-				}
-			};
-		}
+					}
+				]
+			}
+		};
 
-		Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
+
+	} else {
+
+		SlackMessage =	{
+			"room_token" : SlackRoomToken,
+			"request" :
+			{
+				"username": "CodistoConnect",
+				"attachments":
+				[
+					{
+						"fallback": "Summary - " + JSON.stringify(ReportSummary),
+						"pretext": "qa.codisto.com - Integration tests PASSED",
+						"color":"#62CF6F",
+						"fields":
+						[
+							{
+								"title":"Summary of integration tests " + JSON.stringify(ReportSummary),
+								"value": "Integration tests passed, carry on",
+								"short":false
+							}
+						]
+					}
+				]
+			}
+		};
+	}
+
+	Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
 };
 
 
