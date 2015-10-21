@@ -17,6 +17,9 @@ QUnit.test('PluginBuiltFCGIProto', function(assert){
 
 	var FCGIReq = new FastCGIClient();
 	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.ConnectTimeout=10000;
+	FCGIReq.ReceiveTimeout=300000;
+	FCGIReq.SendTimeout=10000;
 	FCGIReq.Send();
 
 	Status = FCGIReq.Status;
@@ -50,6 +53,9 @@ QUnit.test('PluginInstall', function(assert){
 	var h = new HttpClient();
 	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1&test=1");
 	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.ConnectTimeout=10000;
+	h.ReceiveTimeout=300000;
+	h.SendTimeout=10000;
 	h.Send();
 
 	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
@@ -74,6 +80,9 @@ QUnit.test('PluginInstall', function(assert){
 	var FCGIURL = "fastcgi://127.0.0.1:6973/untar?FILE=" + encodeURIComponent(Application.BONDI_APPROOT +  PluginFileName) + "&DIR=" + encodeURIComponent(Application.BONDI_APPROOT + TempDir);
 	var FCGIReq = new FastCGIClient();
 	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.ConnectTimeout=10000;
+	FCGIReq.ReceiveTimeout=300000;
+	FCGIReq.SendTimeout=10000;
 	FCGIReq.Send();
 
 	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
@@ -183,6 +192,9 @@ QUnit.test('PluginResellerInstall', function(assert){
 	var h = new HttpClient();
 	h.Open("GET", "http://qa.codisto.com/plugin/build/manual?branch=master&download=1&test=1&resellerkey=" + ResellerKey);
 	h.SetRequestHeader("X-Codisto-Build", "1");
+	h.ConnectTimeout=10000;
+	h.ReceiveTimeout=300000;
+	h.SendTimeout=10000;
 	h.Send();
 
 	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
@@ -207,6 +219,9 @@ QUnit.test('PluginResellerInstall', function(assert){
 	var FCGIURL = "fastcgi://127.0.0.1:6973/untar?FILE=" + encodeURIComponent(Application.BONDI_APPROOT +  PluginFileName) + "&DIR=" + encodeURIComponent(Application.BONDI_APPROOT + TempDir);
 	var FCGIReq = new FastCGIClient();
 	FCGIReq.Open("POST", FCGIURL);
+	FCGIReq.ConnectTimeout=10000;
+	FCGIReq.ReceiveTimeout=300000;
+	FCGIReq.SendTimeout=10000;
 	FCGIReq.Send();
 
 	assert.equal(FCGIReq.Status , 200, "Untar service is not working correctly .. cannot extract latest plugin and finalize testing");
