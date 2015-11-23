@@ -175,18 +175,17 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		git add "$PLUGINPATH/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-$PLUGINVERSION.php" --force
 	fi
 
-	#Generate a new CHANGELOG.md and add it
-	logger -s "Generating new changelog"
-	github_changelog_generator --token $GITHUBTOKEN
-
-	if [ -z ${TEST} ]; then
-		git add CHANGELOG.md --force
-	fi
 
 	#Update config.xml with new plugin version
 	sed -ri "/1/s/([0-9]+.[0-9]+.[0-9]+)/$PLUGINVERSION/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 
 	if [ -z ${TEST} ]; then
+
+		#Generate a new CHANGELOG.md and add it
+		rm CHANGELOG.md --force
+		logger -s "Generating new changelog"
+		github_changelog_generator --token $GITHUBTOKEN
+		git add CHANGELOG.md
 
 		logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 		git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
