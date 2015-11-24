@@ -11,10 +11,12 @@ var ReportSummary = {
 
 var ReportXML;
 
-QUnit.jUnitReport = function(result) {
+QUnit.jUnitReport = function(report) {
 
-	ReportSummary = result.results;
-	ReportXML += result.xml;
+	//TODO enumerate report.xml and make it easier to read in Slack
+
+	ReportSummary = report.results;
+	ReportXML += report.xml;
 
 };
 
@@ -109,6 +111,7 @@ for(var i = 0, len = listing.length; i < len; i++)
 		Server.Include(elem.Path);
 	}
 }
+
 Debug.LogInfo("Tests finished");
 
 QUnit.jUnitReportSend(ReportSummary, true);

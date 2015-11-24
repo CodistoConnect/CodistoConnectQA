@@ -1,0 +1,70 @@
+QUnit.module('Infrastructure');
+
+
+/* Installed endpoint is hit during data-install.php*/
+QUnit.test('Installed', function(assert){
+
+		var h = new HttpClient();
+		h.Open("POST" , "https://ui.codisto.com/installed/");
+		h.SetRequestHeader("Content-Type", "application/json");
+		h.SetRequestHeader("keepalive", true);
+		h.SetRequestHeader("maxredirects", 0);
+
+		var InstalledOpts = {
+			"magento_version" : "X.X.X.XX",
+			"codisto_version" : "X.X.X.XX",
+			"url" : "qa.codisto.com/testInstalled",
+			"message" : "testInstalled",
+			"code" : "n/a",
+			"file" : "n/a",
+			"line" : "n/a"
+		}
+
+		h.Send(JSON.stringify(InstalledOpts));
+
+		assert.ok(h.Status, 200);
+
+
+});
+
+//Make sure DNS is OK
+QUnit.test('connectRegisterMerchant', function(assert){
+
+	var h = new HttpClient();
+	h.Open("POST" , "https://ui.codisto.com/create/");
+	h.SetRequestHeader("Content-Type", "application/json");
+	h.SetRequestHeader("keepalive", true);
+	h.SetRequestHeader("maxredirects", 0);
+
+	//In Killela/frontend.esp it makes create call to Lady robbinson. Need to check for store name of testRegister_Integration_test and don't actually create the Merchant
+	//As long as we know that FCGI is working OK that is probably enough.
+
+	var CreateOpts = {
+		"type": "magento",
+		"version" : "X.X.X.XX",
+		"url" : "qa.codisto.com/testRegister",
+		"email" : "",
+		"storename" : "testconnectRegisterMerchant_Integration_test",
+		"storecurrency" : "AUD",
+		"resellerkey" : "abc123",
+		"codistoversion" : "X.X.X.XX"
+	}
+
+	h.Send(JSON.stringify(CreateOpts));
+
+	assert.ok(h.Status, 200);
+	assert.ok(h.ResponseText, "OK");
+
+	//Make sure hostkey and merchantid are set
+	assert.ok(h.ResponseObject.merchantid);
+	assert.ok(h.ResponseObject.hostkey);
+
+	//make sure its a number
+	assert.ok(!isNaN(h.ResponseObject["merchantid"]), "merchantid is not a number");
+
+	var HostKey = h.ResponseObject["hostkey"];
+
+	assert.ok(h.ResponseObject["hostkey"].length > 0 , "hostkey length is less than 1");
+
+
+});
