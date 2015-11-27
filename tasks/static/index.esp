@@ -9,6 +9,8 @@ var FilePath = decodeURIComponent(Request.URL.replace(/\?.*/, "").replace(/\/$/,
 if(!FileName)
 	FileName = "";
 
+var FileExtension;
+
 if(/\./.test(FileName))
 	[, FileExtension] = FileName.match(/\.([^\.]*)$/);
 
