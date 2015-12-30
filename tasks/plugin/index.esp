@@ -27,12 +27,14 @@ var ServeFile = function(FilePath) {
 	Response.End();
 };
 
-var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
+
+var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode, MagentoConnect) {
 
 	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
 	var Status = 403;
 	var PluginVersion;
 	var PluginPath;
+	var MagentoConnect;
 
 	try {
 
@@ -40,8 +42,11 @@ var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
 
 		SHA1 = SHA1 || 'n/a';
 		ResellerKey = ResellerKey || 'n/a';
+		MagentoConnect = MagentoConnect || 'n/a';
 
-		var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken;
+		var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN="
+		+ GithubAccessToken + "&MAGENTOCONNECT=" + MagentoConnect);
+
 
 		if(TestMode) {
 			FCGIURL = FCGIURL + "&TEST=1";
@@ -143,6 +148,7 @@ if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
 
 
 }
+
 
 if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
 
