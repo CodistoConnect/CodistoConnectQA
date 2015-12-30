@@ -158,10 +158,12 @@ if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
 		var SHA1 = Request.QueryString.sha1;
 		var ResellerKey = Request.QueryString.resellerkey;
 		var TestMode = (("test" in Request.QueryString) && (Request.QueryString.test))
+		var MagentoConnect = (("magentoconnect" in Request.QueryString) && (Request.QueryString.magentoconnect));
+
 
 		if (Branch || SHA1) {
 
-			var BuildResult = BuildPlugin(Branch, SHA1, ResellerKey, TestMode);
+			var BuildResult = BuildPlugin(Branch, SHA1, ResellerKey, TestMode,  MagentoConnect);
 
 			Response.Status = BuildResult.Status;
 

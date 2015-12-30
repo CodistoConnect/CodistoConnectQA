@@ -16,35 +16,48 @@ RESELLER=$4
 
 GITHUBTOKEN=$5
 
-TEST=$6
+#Flag to indicate if creating a package with Magneto Connect XML node
+MAGENTOCONNECT=$6
+
+TEST=$7
 
 #Variables that might be set but have empty values should be unset to simplify logic below
-if [[ $SHA1 ]]; then
-	if [[ ${SHA1} ]]; then
-		if [[ $SHA1 = "n/a" ]]; then
-			logger -s "SHA1 variable exists but is set to n/a so unset"
-			unset SHA1
-		else
-			logger -s "SHA1 variable exists and is set and all good"
-		fi
-	else
-		logger -s "SHA1 variable exists but is empty so unsetting"
+if [[ ${SHA1} ]]; then
+	if [[ $SHA1 = "n/a" ]]; then
+		logger -s "SHA1 variable exists but is set to n/a so unset"
 		unset SHA1
+	else
+		logger -s "SHA1 variable exists and is set and all good"
 	fi
+else
+	logger -s "SHA1 variable exists but is empty so unsetting"
+	unset SHA1
 fi
 
-if [[ $RESELLER ]]; then
-	if [[ ${RESELLER} ]]; then
-		if [[ $RESELLER = "n/a" ]]; then
-			logger -s "RESELLER variable exists but is set to n/a so unset"
-			unset RESELLER
-		else
-			logger -s "RESELLER variable exists and is set and all good"
-		fi
-	else
-		logger -s "RESELLER variable exists but is empty so unsetting"
+
+if [[ ${RESELLER} ]]; then
+	if [[ ${RESELLER} = "n/a" ]]; then
+		logger -s "RESELLER variable exists but is set to n/a so unset"
 		unset RESELLER
+	else
+		logger -s "RESELLER variable exists and is set and all good"
 	fi
+else
+	logger -s "RESELLER variable exists but is empty so unsetting"
+	unset RESELLER
+fi
+
+#We either want to do a Reseller build if this variable is explicitely set or if there was a push to master
+if [[ ${MAGENTOCONNECT} ]]; then
+	if [[ ${MAGENTOCONNECT} = "n/a" ]]; then
+		logger -s "Magento variable exists but is set to n/a so unset"
+		unset MAGENTOCONNECT
+	else
+		logger -s "MAGENTOCONNECTvariable exists and is set and all good"
+	fi
+else
+	logger -s "MAGENTOCONNECT variable exists but is empty so unsetting"
+	unset MAGENTOCONNECT
 fi
 
 logger -s "Arguments are $@"
@@ -77,6 +90,7 @@ logger -s "STASHPOP=$STASHPOP"
 logger -s "SHA1=$SHA1"
 logger -s "RESELLER=$RESELLER"
 logger -s "GITHUBTOKEN=$GITHUBTOKEN"
+logger -s "MAGENTOCONNECT=$MAGENTOCONNECT"
 logger -s "TEST=$TEST"
 
 cd $PLUGINPATH
@@ -128,8 +142,8 @@ PLUGINVERSION=`awk '/<version>/ {print $1}' $PLUGINPATH/code/community/Codisto/S
 
 logger -s "PLUGINVERSION is $PLUGINVERSION"
 
-
-if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
+#If its a normal master push without reseller or magentoconnect nodes then do the full workflow
+if [ $BRANCH = "master" ] && [ -z $RESELLER ]  && [-z $MAGENTOCONNECT];	then
 
  	logger -s "Master was pushed and reseller was not specified so I'm doing full build"
 	logger -s "Master branch has been pushed - Updating everything"
@@ -199,6 +213,9 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 		logger -s "Pusing master"
 		git push origin master --force
+
+		#It was a full master build so we need to create an additional package for Magento Connect with the appropriate MagentoConnect XML node
+		MAGENTOCONNECT=1
 	else
 		logger -s "Not pushing master - integration tests running"
 
@@ -244,11 +261,20 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 fi
 
-#Make sure Reseller is set and not empty. If so add in xml node to config
 if [[ $RESELLER ]]; then
 	echo "Reseller specified so doing SED magic"
 	sed -i "s/<\/config>/\\t<codisto>\n\t\t<resellerkey>$RESELLER<\/resellerkey>\n\t<\/codisto>\n\n\n<\/config>/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 fi
+
+
+if [[ $MAGENTOCONNECT ]]; then
+	echo "Reseller specified so doing SED magic"
+	sed -i "s/<\/config>/\\t<codisto>\n\t\t<magentoconnect>$RESELLER<\/magentoconnect>\n\t<\/codisto>\n\n\n<\/config>/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
+fi
+
+
+#the following code needs to be rolled up into a bash function so we can easily call it multiple times -- OR perhaps I should just do it in index.esp
+#at the end of the webhook near 				if(Hook.branch == "master") { ... might be better to do it in bondi land
 
 #Let's make an app directory in $BUILDPATH and copy + tar it there
 mkdir -p "$BUILDPATH/app"
