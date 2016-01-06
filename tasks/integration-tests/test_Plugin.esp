@@ -278,6 +278,8 @@ QUnit.test('PluginResellerInstall', function(assert){
 			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
 			"app/code/community/Codisto/Sync/data/" :  true,
 			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
+			"app/code/community/Codisto/Sync/Block/" : true,
+			"app/code/community/Codisto/Sync/Block/PaymentInfo.php" : true,
 			"app/code/community/Codisto/Sync/etc/" :  true,
 			"app/code/community/Codisto/Sync/etc/adminhtml.xml" :  true,
 			"app/code/community/Codisto/Sync/etc/config.xml" :  true,
