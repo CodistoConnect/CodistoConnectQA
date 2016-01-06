@@ -214,8 +214,6 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ]  && [-z $MAGENTOCONNECT];	then
 		logger -s "Pusing master"
 		git push origin master --force
 
-		#It was a full master build so we need to create an additional package for Magento Connect with the appropriate MagentoConnect XML node
-		MAGENTOCONNECT=1
 	else
 		logger -s "Not pushing master - integration tests running"
 
@@ -268,13 +266,9 @@ fi
 
 
 if [[ $MAGENTOCONNECT ]]; then
-	echo "Reseller specified so doing SED magic"
-	sed -i "s/<\/config>/\\t<codisto>\n\t\t<magentoconnect>$RESELLER<\/magentoconnect>\n\t<\/codisto>\n\n\n<\/config>/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
+	echo "Magento Connect  specified so doing SED magic"
+	sed -i "s/<\/config>/\\t<codisto>\n\t\t<magentoconnect>1<\/magentoconnect>\n\t<\/codisto>\n\n\n<\/config>/" "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 fi
-
-
-#the following code needs to be rolled up into a bash function so we can easily call it multiple times -- OR perhaps I should just do it in index.esp
-#at the end of the webhook near 				if(Hook.branch == "master") { ... might be better to do it in bondi land
 
 #Let's make an app directory in $BUILDPATH and copy + tar it there
 mkdir -p "$BUILDPATH/app"
@@ -334,11 +328,11 @@ cp "$BUILDPATH/$PLUGINFNAME" "$SCRIPTPATH/"
 #Clean up packager temporary files
 rm -rf $BUILDPATH/*
 
-#Plugin has been built for reseller so we need to restore the config file to previous state
-if [[ $RESELLER ]]; then
-	cd $PLUGINPATH
-	logger -s "About to restore config.xml after I have finished adding the reseller key back to version in $SHA1"
-	git checkout $SHA1 "code/community/Codisto/Sync/etc/config.xml"
+#Plugin has been built for reseller  or Magento Connect so we need to restore the config file to previous state
+if  [ ${RESELLER} ] || [${MAGENTOCONNECT}]; then
+	cd ${PLUGINPATH}
+	logger -s "About to restore config.xml after I have finished adding the reseller key back to version in ${SHA1}"
+	git checkout ${SHA1} "code/community/Codisto/Sync/etc/config.xml"
 	logger -s "Master I have restored the config.xml file and no reseller specific node exists anymore"
 fi
 

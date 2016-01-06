@@ -160,7 +160,6 @@ if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
 		var TestMode = (("test" in Request.QueryString) && (Request.QueryString.test))
 		var MagentoConnect = (("magentoconnect" in Request.QueryString) && (Request.QueryString.magentoconnect));
 
-
 		if (Branch || SHA1) {
 
 			var BuildResult = BuildPlugin(Branch, SHA1, ResellerKey, TestMode,  MagentoConnect);
@@ -261,7 +260,9 @@ Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 					};
 
 					Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
-
+					
+					//Branch, SHA1, ResellerKey, TestMode, MagentoConnect - Package up Connect version
+					 BuildPlugin(Hook.branch, Hook.sha1, null, false, true);
 				}
 
 			}
