@@ -181,17 +181,29 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	if [ -z ${TEST} ]; then
 
-		#Generate a new CHANGELOG.md and add it
-		rm CHANGELOG.md --force
-		logger -s "Generating new changelog"
-		github_changelog_generator --token $GITHUBTOKEN
-		git add CHANGELOG.md
-
+		#Commit bumped files
 		logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 		git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 
-		logger -s "Committing version bumped files"
+		#Delete tag if it exists, create a new tag with the plugin version (this tag is used by the changelog generator)
+		git tag -d "$PLUGINVERSION"
+		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
+
+
+		#Generate a new CHANGELOG.md (it will use the tag that was just created locally)
+		rm CHANGELOG.md --force
+		logger -s "Generating new changelog"
+		github_changelog_generator --token $GITHUBTOKEN
+
 		git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
+		logger -s "Committing version bumped files"
+
+		#Redo the tag that has updated changelog etc
+		git tag -d "$PLUGINVERSION"
+		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
+
+		logger -s "Pushing tag"
+		git push origin "$PLUGINVERSION" --force
 
 		#Update master
 		git branch -D master
@@ -204,19 +216,7 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	fi
 
-	if [ -z ${TEST} ]; then
 
-			#Create a new tag with the plugin version
-			git tag -d "$PLUGINVERSION"
-			git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
-			logger -s "Pusing tag"
-			git push origin "$PLUGINVERSION" --force
-
-	else
-
-			logger -s "Not pushing tag - integration tests running"
-
-	fi
 
   if [ -z ${TEST} ]; then
 
