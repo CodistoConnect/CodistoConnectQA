@@ -1,0 +1,339 @@
+var FindLinks = function(Attribute, Html) {
+
+	var Links = [];
+	var StartingIndex = 0;
+	var AttrLength = Attribute.length;
+
+	var Found =Html.indexOf(Attribute, StartingIndex);
+
+	while(Found > 0) {
+
+		var Start = Found + AttrLength;
+		var QuoteType = Html.substr(Start + 1, 1);
+		var QuoteEnd = Html.indexOf(QuoteType, Start + 2);
+
+		var Link = Html.substring(Start +2, QuoteEnd);
+
+		if(Link.substr(0,4) == "http")
+		Links.push(Link);
+
+		StartingIndex = QuoteEnd + 1;
+		Found = Html.indexOf(Attribute, StartingIndex);
+
+	}
+	return Links;
+};
+
+var ProcessStaticLinks = function(ResponseTextInput, assert) {
+
+	var ExpectedSizeHashMap = {
+		"https://maxcdn.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.min.css" : 22084
+	};
+
+	var hrefLinks = FindLinks("href", ResponseTextInput);
+	var srcLinks = FindLinks("src", ResponseTextInput);
+	var Links = hrefLinks.concat(srcLinks);
+
+	Links.forEach(function(Link) {
+
+		var StaticHttp = new HttpClient();
+		StaticHttp.Open("GET", Link);
+		StaticHttp.Send();
+
+		var StaticSize = StaticHttp.ResponseBody.length;
+
+		assert.ok(StaticHttp.Status == 200, "Failed to fetch static resource from " + Link);
+		assert.ok(StaticSize > 0, "Static resource fetched from " + Link + " had empty responsebody - Check CDN etc!!");
+
+		if(Link in ExpectedSizeHashMap) {
+			assert.ok(StaticSize == ExpectedSizeHashMap[Link], "Size of static resource " + Link + " was unexpected (" + StaticSize + ") - expecting " + ExpectedSizeHashMap[Link]);
+		}
+
+	});
+};
+
+var SendRequest = function(HostKey, Url, Verb) {
+
+	var h = new HttpClient();
+	if(!Verb) {
+		Verb = "GET";
+	}
+
+	h.Open(Verb, Url);
+	h.SetRequestHeader("X-HostKey", HostKey);
+	h.SetRequestHeader("X-Codisto-Version", "1.1.66");
+	h.SetRequestHeader("Connection", "keep-alive");
+	h.SetRequestHeader("Pragma" , "no-cache");
+	h.SetRequestHeader("Cache-Control" , "no-cache");
+
+	h.ConnectTimeout =  10000;
+	h.ReceiveTimeout = 10000;
+	h.SendTimeout = 10000;
+	h.Send();
+
+	return { Status: h.Status, ResponseText: h.ResponseText};
+
+}
+
+QUnit.module('View', {
+
+	setup: function() {
+
+		var MerchantList = Request.ServerVariables.MERCHANT.split("|");
+		var HostKeys = Request.ServerVariables.HOSTKEY.split("|");
+
+		if(MerchantList.length != HostKeys.length) {
+			throw "Amount of merchants specified doesn't match amount of hostkeys provided";
+		}
+
+		var Merchants = {};
+
+		for(var i =0 ;i < MerchantList.length; i++) {
+
+			var MerchantID = MerchantList[i];
+			var HostKey = HostKeys[i];
+			Merchants[MerchantID] = HostKey;
+		}
+
+		QUnit.Config = {
+			ProcessMerchants: 	function(CallbackFn) {
+				for(var i = 0; i< MerchantList.length; i++) {
+					CallbackFn(MerchantList[i], HostKeys[i]);
+				};
+			}
+		}
+	},
+	teardown: function() {
+		delete QUnit.Config;
+	}
+});
+
+
+QUnit.test('invalid-endpoint', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var InvalidResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/invalidendpoint/");
+		assert.ok(InvalidResponse.Status == 502, "Unexpected status. Was expected a 502 for invalidendpoint");
+
+		//TODO Any nginx 502 Response body checking
+	});
+});
+
+//Check Manage Listings view
+QUnit.test('ebay-tab-xpressgrid', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var ListingsResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/ebaytab/");
+
+		assert.ok(ListingsResponse.Status == 200);
+		assert.ok(ListingsResponse.ResponseText.length > 0);
+
+		//Make sure all static links are OK
+		ProcessStaticLinks(ListingsResponse.ResponseText, assert);
+
+		//TODO Make sure that at least outer div exists and so on. XpressGrid specific view checks
+	});
+});
+
+
+//Check Manage Listings view with invalid host key
+QUnit.test('ebay-tab-xpressgrid-mismatchhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var ListingsResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/ebaytab/");
+
+		assert.ok(ListingsResponse.Status == 200);
+		assert.ok(ListingsResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = ListingsResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+
+	});
+});
+
+
+//Check Settings view
+QUnit.test('ebay-tab-settings', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var SettingsResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/settings/");
+
+		assert.ok(SettingsResponse.Status == 200);
+		assert.ok(SettingsResponse.ResponseText.length > 0);
+
+		ProcessStaticLinks(SettingsResponse.ResponseText, assert);
+	});
+});
+
+//Check Settings view with invalid hostkey
+QUnit.test('ebay-tab-settings-mismatchhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		SettingsResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/settings/");
+
+		assert.ok(SettingsResponse.Status == 200);
+		assert.ok(SettingsResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = SettingsResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+	});
+});
+
+//Check single product eBay view
+QUnit.test('ebay-product', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var ProductResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/ebaytab/product/1/?merchantid=" +MerchantID + "&storeid&isAjax=true");
+
+		assert.ok(ProductResponse.Status == 200);
+		assert.ok(ProductResponse.ResponseText.length > 0);
+
+		//Product view specific html
+		var ContainsProductForm = ProductResponse.ResponseText.indexOf("id=\"ProductForm\"") > 0;
+		assert.ok(ContainsProductForm == true, "Fetching ebaytab/product/productid didn't contain a Form with id ProductForm");
+
+		ProcessStaticLinks(SettingsResponse.ResponseText, assert);
+	});
+});
+
+//Check single product eBay view with invalid host key
+QUnit.test('ebay-product-invalidhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var ProductResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/ebaytab/product/1/?merchantid=" + MerchantID + "&storeid&isAjax=true");
+
+		assert.ok(ProductResponse.Status == 200);
+		assert.ok(ProductResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = ProductResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+	});
+});
+
+//Check Orders related view
+QUnit.test('ebay-tab-orders', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var OrdersResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/orders");
+
+		assert.ok(OrdersResponse.Status == 200);
+		assert.ok(OrdersResponse.ResponseText.length > 0);
+
+		ProcessStaticLinks(OrdersResponse.ResponseText, assert);
+
+		//TODO Order specific view specific html check
+
+	});
+});
+
+QUnit.test('ebay-tab-orders-invalidhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var OrdersResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/orders");
+
+		assert.ok(OrdersResponse.Status == 200);
+		assert.ok(OrdersResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = OrdersResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+	});
+});
+
+
+//Check Manage Categories related view
+QUnit.test('ebay-tab-categories', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var CategoriesResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/ebaytab/categories/");
+
+		assert.ok(CategoriesResponse.Status == 200);
+		assert.ok(CategoriesResponse.ResponseText.length > 0);
+
+		//Category specific expected view check
+		var ContainsExpectedText = CategoriesResponse.ResponseText.indexOf("<div class=\"magento-categories-header\">") > 0;
+		assert.ok(ContainsExpectedText == true);
+
+		ProcessStaticLinks(CategoriesResponse.ResponseText, assert);
+	});
+});
+
+//Check Manage Categories related view with invalid hostkey
+QUnit.test('ebay-tab-categories-invalidhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var CategoriesResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/ebaytab/categories/");
+
+		assert.ok(CategoriesResponse.Status == 200);
+		assert.ok(CategoriesResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = CategoriesResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+	});
+});
+
+//Check ImportListings related view
+QUnit.test('ebay-tab-importlistings', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var ImportListingsResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/ebaytab/importlistings/?v=2");
+
+		assert.ok(ImportListingsResponse.Status == 200);
+		assert.ok(ImportListingsResponse.ResponseText.length > 0);
+
+		ProcessStaticLinks(ImportListingsResponse.ResponseText, assert);
+
+		//TODO import listings specific html checks
+	});
+});
+
+//Check Import Listings related view invalid host  key
+QUnit.test('ebay-tab-importlistings-invalidhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var ImportListingsResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/ebaytab/importlistings/?v=2");
+
+		assert.ok(ImportListingsResponse.Status == 200);
+		assert.ok(ImportListingsResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = ImportListingsResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+	});
+});
+
+//Check Introduction/Tutorial
+QUnit.test('ebay-tab-introduction', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+
+		var IntroResponse = SendRequest(HostKey, "https://ui.codisto.com/" + MerchantID + "/ebaytab/?intro=1");
+
+		assert.ok(IntroResponse.Status == 200);
+		assert.ok(IntroResponse.ResponseText.length > 0);
+
+		ProcessStaticLinks(IntroResponse.ResponseText, assert);
+
+		//TODO Introduction specific html checks
+	});
+});
+
+////Check Introduction/Tutorial invalid hostkey
+QUnit.test('ebay-tab-introduction-invalidhostkey', function(assert) {
+
+	QUnit.Config.ProcessMerchants(function(MerchantID, HostKey) {
+		var IntroResponse = SendRequest("abc123", "https://ui.codisto.com/" + MerchantID + "/ebaytab/?intro=1");
+
+		assert.ok(IntroResponse.Status == 200);
+		assert.ok(IntroResponse.ResponseText.length > 0);
+
+		var ContainsExpectedText = IntroResponse.ResponseText.indexOf("The CodistoConnect Magento extension you are running is out of date!") > 0;
+		assert.ok(ContainsExpectedText == true);
+
+	});
+});
