@@ -93,9 +93,11 @@ fi
 #Make sure all remotes are up to date before we pull or checkout SHA's which might not exist
 git fetch --all --prune
 
+#Clean up local tags that have been deleted off remote
+git fetch --prune origin +refs/tags/*:refs/tags/*
+
 
 if [[ $SHA1 ]]; then
-
 	#Pull specific SHA1 - This is ideal for web hook receive - you can redeliver a packet and it will checkout correct SHA and create correct tag etc
 	logger -s "SHA1 was specified so checking out commit $SHA1"
 	git checkout $SHA1 --force
@@ -131,7 +133,7 @@ logger -s "PLUGINVERSION is $PLUGINVERSION"
 
 if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
- 	logger -s "Master was pushed and reseller was not specified so I'm doing full build"
+	logger -s "Master was pushed and reseller was not specified so I'm doing full build"
 	logger -s "Master branch has been pushed - Updating everything"
 
 	#Let's update the plugin version
@@ -181,22 +183,24 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	if [ -z ${TEST} ]; then
 
-		#Commit bumped files
-		logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
-		git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
+		#At this point, $PLUGINVERSION contains the new version that will be the new tag
 
-		#Delete tag if it exists, create a new tag with the plugin version (this tag is used by the changelog generator)
+		#At this point, we are in a detached HEAD state ..  but we know that we are  building an older master... so lets nuke current local master and update to make this SHA the new master
+		git branch -D master --force
+		git checkout -b master
+
+		#Delete tag if it exists, create a new tag with the plugin version (this tag is used by the changelog generator below - that is why we are creating the tag at this point)
 		git tag -d "$PLUGINVERSION"
 		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
-
 
 		#Generate a new CHANGELOG.md (it will use the tag that was just created locally)
 		rm CHANGELOG.md --force
 		logger -s "Generating new changelog"
 		github_changelog_generator --token $GITHUBTOKEN
 
-		git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
+		#Commit the bumped config files and new changelog
 		logger -s "Committing version bumped files"
+		git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
 
 		#Redo the tag that has updated changelog etc
 		git tag -d "$PLUGINVERSION"
@@ -205,35 +209,32 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		logger -s "Pushing tag"
 		git push origin "$PLUGINVERSION" --force
 
-		#Update master
-		git branch -D master
-		git checkout -b master
-
 		logger -s "Pusing master"
 		git push origin master --force
 	else
+		
 		logger -s "Not pushing master - integration tests running"
 
 	fi
 
 
 
-  if [ -z ${TEST} ]; then
+	if [ -z ${TEST} ]; then
 
-			#checkout development branch of the specific SHA
-			logger -s "Checking out development branch with sha of $DEVSHA"
-			git checkout $DEVSHA --force
-			git merge "$PLUGINVERSION" --no-edit
+		#checkout development branch of the specific SHA
+		logger -s "Checking out development branch with sha of $DEVSHA"
+		git checkout $DEVSHA --force
+		git merge "$PLUGINVERSION" --no-edit
 
-			#we are in a detached state, kill development and recreate
-			git branch -D development
-			git checkout -b development
+		#we are in a detached state, kill development and recreate
+		git branch -D development
+		git checkout -b development
 
-			logger -s "Pusing development"
-			git push origin development --force
+		logger -s "Pusing development"
+		git push origin development --force
 
-			#We are finished with development so back to the SHA1 that was checked out for master
-		  git checkout master
+		#We are finished with development so back to the SHA1 that was checked out for master
+		git checkout master
 	else
 
 		logger -s "Not pushing development - integration tests running"
@@ -351,7 +352,7 @@ else
 	logger -s "Restoring system state after test run"
 	#restore filesystem state as we were only testing (its OK as the plugin builder only has one child so only testing or legitimate building can happen at once)
 
-  logger -s "PLUGIN PATH IS $PLUGINPATH"
+	logger -s "PLUGIN PATH IS $PLUGINPATH"
 	cd $PLUGINPATH && git reset --hard && git clean -dfx --force
 fi
 
