@@ -15,8 +15,14 @@ QUnit.log( function( details ) {
 
 	if("source" in details) {
 
+		var  SHAHash = File.Open("/.git/ORIG_HEAD").Read();
 		var CallStack = details.source.split("\n");
 		var CallRef = CallStack[0].split("@")[1];
+		var CallRefComponents = CallRef.split("integration-tests/");
+		var LineRefComponents = CallRefComponents[1].split(":");
+		var FileRef = LineRefComponents[0];
+		var LineRef = LineRefComponents[1];
+		CallRef = "https://github.com/CodistoConnect/CodistoConnectQA/blob/" + SHAHash + "/tasks/integration-tests/" + FileRef + "#L" + LineRef;
 
 		if(!(details.testname in QUnit.AssertSource)) {
 			//No sources registered for this test yet
