@@ -317,6 +317,8 @@ QUnit = {
 	},
 
 	test: function( testName, expected, callback, async ) {
+		config.currentTestName = testName;
+
 		var test,
 			name = "<span class='test-name'>" + escapeInnerText( testName ) + "</span>";
 
@@ -411,13 +413,16 @@ QUnit.assert = {
 		if ( !config.current ) {
 			throw new Error( "ok() assertion outside test context, was " + sourceFromStacktrace(2) );
 		}
+
 		result = !!result;
 
 		var source,
 			details = {
 				result: result,
-				message: msg
+				message: msg ,
+				testname: config.currentTestName
 			};
+
 
 		msg = escapeInnerText( msg || (result ? "okay" : "failed" ) );
 		msg = "<span class='test-message'>" + msg + "</span>";
