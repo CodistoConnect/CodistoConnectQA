@@ -42,7 +42,10 @@ var ProcessStaticLinks = function(ResponseTextInput, assert) {
 
 		var StaticSize = StaticHttp.ResponseBody.length;
 
-		assert.ok(StaticHttp.Status == 200, "Failed to fetch static resource from " + Link);
+		var URLComponents = Link.split("/");
+
+		var GithubSearchLink = "https://github.com/ontech/killela/search?l=html&q=" + URLComponents[URLComponents.length -1] + "&utf8=%E2%9C%93";
+		assert.ok(StaticHttp.Status == 200, "Failed to fetch static resource from " + Link + " [Search link = " + GithubSearchLink + "] ");
 		assert.ok(StaticSize > 0, "Static resource fetched from " + Link + " had empty responsebody - Check CDN etc!!");
 
 		if(Link in ExpectedSizeHashMap) {

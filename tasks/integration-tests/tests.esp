@@ -15,7 +15,7 @@ QUnit.log( function( details ) {
 
 	if("source" in details) {
 
-		var  SHAHash = File.Open("/.git/ORIG_HEAD").Read();
+		var  SHAHash = File.Open("/.git/ORIG_HEAD").Read().replace("\n", "");
 		var CallStack = details.source.split("\n");
 		var CallRef = CallStack[0].split("@")[1];
 		var CallRefComponents = CallRef.split("integration-tests/");
