@@ -4,6 +4,12 @@ var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
+if("BUILD" in Request.ServerVariables) {
+	//TODO do all buld related work in sub process so main process can respond to github webhook quickly.
+	Response.End();
+};
+
+
 var ServeFile = function(FilePath, DownloadFileName) {
 
 	if(File.IsFile(FilePath)) {
@@ -31,7 +37,7 @@ var ServeFile = function(FilePath, DownloadFileName) {
 };
 
 var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
-	
+
 	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
 	var Status = 403;
 	var PluginVersion;
