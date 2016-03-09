@@ -31,9 +31,7 @@ var ServeFile = function(FilePath, DownloadFileName) {
 };
 
 var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
-	Debug.LogInfo("In BuildPlugin");
-
-
+	
 	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
 	var Status = 403;
 	var PluginVersion;
