@@ -18,6 +18,8 @@ GITHUBTOKEN=$5
 
 TEST=$6
 
+TEST=1
+
 #Variables that might be set but have empty values should be unset to simplify logic below
 if [[ $SHA1 ]]; then
 	if [[ ${SHA1} ]]; then
@@ -203,14 +205,14 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
 
 		logger -s "Pushing tag"
-		git push origin "$PLUGINVERSION" --force
+		#git push origin "$PLUGINVERSION" --force
 
 		#Update master
 		git branch -D master
 		git checkout -b master
 
 		logger -s "Pusing master"
-		git push origin master --force
+		#git push origin master --force
 	else
 		logger -s "Not pushing master - integration tests running"
 
@@ -230,7 +232,7 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 			git checkout -b development
 
 			logger -s "Pusing development"
-			git push origin development --force
+			#git push origin development --force
 
 			#We are finished with development so back to the SHA1 that was checked out for master
 		  git checkout master

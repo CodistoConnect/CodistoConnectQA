@@ -4,7 +4,7 @@ var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
-var ServeFile = function(FilePath) {
+var ServeFile = function(FilePath, DownloadFileName) {
 
 	if(File.IsFile(FilePath)) {
 
@@ -15,10 +15,13 @@ var ServeFile = function(FilePath) {
 		Response.Pragma = "no-cache";
 		Response.Expires = 0;
 
+		var FileName;
 		var FileComponents = FilePath.split("/");
-		Response.Headers["Content-disposition"] =  "attachment;filename=" + FileComponents[FileComponents.length -1];
+		var FileName = DownloadFileName || FileComponents[FileComponents.length -1];
 
+		Response.Headers["Content-disposition"] =  "attachment;filename=" + FileName;
 		Response.SendFile(FilePath);
+
 	} else {
 
 		Response.Status = "404 Not Found";
@@ -28,6 +31,8 @@ var ServeFile = function(FilePath) {
 };
 
 var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
+	Debug.LogInfo("In BuildPlugin");
+
 
 	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
 	var Status = 403;
@@ -80,21 +85,30 @@ var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
 //A couple of aliases
 if(Request.ServerVariables.URL == "/plugin/getstable") {
 	Response.Headers.Location = "/plugin/CodistoConnect.tgz";
-}
-
-else if(Request.ServerVariables.URL == "/plugin/getbeta") {
+} else if(Request.ServerVariables.URL == "/plugin/getbeta") {
 	Response.Headers.Location = "/plugin/CodistoConnect-beta.tgz";
-}
-else {
+} else {
 
 	var FilePath = decodeURIComponent(Request.ServerVariables.URL.replace(/\?.*/, "").replace(/\/$/, "/index.html"));
 
-	if(FilePath == "/plugin/CodistoConnect-beta.tgz") {
-		ServeFile("/tasks/plugin/CodistoConnect-beta.tgz");
-	}
+	if(Request.ServerVariables.URL == "/plugin/magentoconnect") {
 
-	else if(FilePath == "/plugin/CodistoConnect.tgz") {
+		var ConfigData = File.Open("/tasks/plugin/example-config.php").Read();
+		var ExtensionVersion = ConfigData.indexOf("extension_version");
+		ExtensionVersion = ConfigData.indexOf("=>", ExtensionVersion + 1);
+		ExtensionVersion = ConfigData.substring(ExtensionVersion, ConfigData.indexOf("\n", ExtensionVersion));
+		ExtensionVersion = ExtensionVersion.split("'")[1];
+
+		ServeFile("/tasks/plugin/CodistoConnect.tgz", "codistoconnect-" + ExtensionVersion + ".tgz");
+
+	} else if(FilePath == "/plugin/CodistoConnect-beta.tgz") {
+
+		ServeFile("/tasks/plugin/CodistoConnect-beta.tgz");
+
+	} else if(FilePath == "/plugin/CodistoConnect.tgz") {
+
 		ServeFile("/tasks/plugin/CodistoConnect.tgz");
+
 	}
 }
 
