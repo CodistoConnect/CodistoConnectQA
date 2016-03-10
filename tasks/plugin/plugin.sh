@@ -18,8 +18,6 @@ GITHUBTOKEN=$5
 
 TEST=$6
 
-TEST=1
-
 #Variables that might be set but have empty values should be unset to simplify logic below
 if [[ $SHA1 ]]; then
 	if [[ ${SHA1} ]]; then
@@ -94,7 +92,7 @@ fi
 
 #Make sure all remotes are up to date before we pull or checkout SHA's which might not exist
 git fetch --all --prune
-
+git fetch --prune origin +refs/tags/*:refs/tags/*
 
 if [[ $SHA1 ]]; then
 
@@ -191,11 +189,11 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		git tag -d "$PLUGINVERSION"
 		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
 
-
 		#Generate a new CHANGELOG.md (it will use the tag that was just created locally)
 		rm CHANGELOG.md --force
 		logger -s "Generating new changelog"
-		github_changelog_generator --token $GITHUBTOKEN
+		CHANGEOUT=$( github_changelog_generator --token ${GITHUBTOKEN} )
+		logger -s ${CHANGEOUT}
 
 		git commit -am "BOT - Update data-install.php , bump plugin version and generate new changelog"
 		logger -s "Committing version bumped files"
@@ -211,7 +209,7 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		git branch -D master
 		git checkout -b master
 
-		logger -s "Pusing master"
+		logger -s "Pushing master"
 		#git push origin master --force
 	else
 		logger -s "Not pushing master - integration tests running"

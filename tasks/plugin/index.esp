@@ -211,7 +211,6 @@ Github.Hooks.push(/^\/plugin\/integration-tests/, Secret, function(Hook){
 });
 
 
-
 Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
 
 	if(Hook.branch == "development" || Hook.branch == "master") {
