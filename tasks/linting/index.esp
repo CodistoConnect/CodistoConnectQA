@@ -1,101 +1,16 @@
 var Github = Server.Import("/include/github.esp");
-
 var Secret = Application.GITHUBWEBHOOKSECRET;
 var SlackRoomToken = Application.SLACKROOMTOKEN;
 var Logger = Server.Import("/include/log.esp");
 
-var MIN_PHP = Application.PHP_MIN_VERSION || "5.2";
-
-//This Lint function should be moved out into php directory - Need to make some consistent interfaces and have languages self contained
-var Lint = function(SHA1) {
-
-	var Status = 403;
-	var Errors = [];
-	var Warnings = [];
-	var PluginPath = "";
-
-	try {
-
-		var FCGIReq = new FastCGIClient();
-		FCGIReq.Open("POST", "fastcgi://127.0.0.1:6972/phplinter?phpversion=" + MIN_PHP + "&stashpop=1&sha1=" + SHA1);
-		FCGIReq.Send();
-
-
-
-		if(FCGIReq.Status == 200) {
-
-			var ResponseBody = FCGIReq.ResponseBody.split("\n");
-			PluginPath = ResponseBody[ResponseBody.length - 2] + "/";
-
-			Status = FCGIReq.Status;
-			var FileNameToken = "FILE: ";
-			var FileName;
-
-			for(var i = 0 ; i < ResponseBody.length; i++) {
-
-				var Line = ResponseBody[i];
-
-				if(Line.indexOf(FileNameToken) == 0) {
-					FileName = Line.substr(FileNameToken.length, Line.length - FileNameToken.length);
-				}
-				var LineTokens = Line.split("|");
-				if(LineTokens.length == 3) {
-
-					var Type = LineTokens[1].trim();
-
-					switch(Type){
-						case "ERROR":
-							Errors.push({"filename" : FileName.replace(PluginPath, ""), "line": parseInt(LineTokens[0].trim(), 10), "text" : LineTokens[2]});
-							break;
-						case "WARNING":
-							Warnings.push({"filename" : FileName.replace(PluginPath, ""), "line" : parseInt(LineTokens[0].trim(), 10), "text": LineTokens[2]});
-							break;
-					}
-				}
-			}
-		}
-
-
-	} catch(e) {
-		Debug.LogInfo(e.toSource());
-	}
-
-	finally {
-
-		return {
-			"status" : Status,
-			"errors" : Errors,
-			"warnings" : Warnings,
-			"pluginpath" : PluginPath
-		};
-	}
-
-};
-
-
-//TODO refactor so that the webhooks have less copy pasta and use the same interfaces and error reporting mechanisms
-//then I can just import the appropriate module depending on webhooksetup (which will dictate language) ... or I could switch on the repo ...
-if (!Github.Hooks.pull(/^\/linting\/lint\/bondi/, Secret, function (Hook) {
-
-	var PullRequestNumber = Hook.number;
-	var Report = [];
-	var StaticAnalysisPass = false;
-	var Warnings = false;
-	var Errors = false;
-	var FilesMap = Github.PullRequests.Files(PullRequestNumber);
-
-	var LintResults = {status: 200};
-
-
-
-
-}
-
-
 if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
+		//Github meta data we are interested in
 		var PullRequestNumber = Hook.number;
 		var Repo = Hook.repo.toLowerCase();
+		var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+
+		//Report state
 		var LintResults = {status: 200};
 		var Report = [];
 		var StaticAnalysisPass = false;
@@ -105,7 +20,7 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 		var Lint;
 		switch(Repo) {
 			case "codistoconnect" :
-				Lint = Server.Import("/tasks/linting/php/linter.esp")[FilesMap];
+				Lint = Server.Import("/tasks/linting/php/linter.esp");
 			default:
 				Lint = Server.Import("/tasks/linting/bondi/linter.esp")[FilesMap];
 
@@ -135,7 +50,9 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 						var ChangeSetWarnings = 0;
 
 						//Get list of files in this pull request - the linter may find erroneous files not part of this changeset. Discard
-						var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+						//var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+
+						//TODO move the language report specific generation stuff into each language specific module
 
 						Report.push("<h4>Configuration</h4>");
 						Report.push("");

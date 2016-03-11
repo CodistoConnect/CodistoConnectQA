@@ -1,0 +1,40 @@
+(function(FilesMap) {
+
+	Server.Include('qunit/qunit-1.9.0.js');
+	Server.Include('qunit/junitlogger.js');
+
+	/*
+	QUnit.log( function( details ) {
+
+
+	});
+	*/
+
+	QUnit.module('bondisimpletests');
+
+	//Very rudimentary test that will at least tell us about mistmatching braces
+	QUnit.test('BracesBalance', function(assert){
+
+		for(var fileName of FilesMap) {
+
+			var FileContents = File.Open(fileName, "rt").Read();
+
+			var MatchSet = [
+				{ Open : "[", Close : "]"},
+				{ Open : "{", Close : "}"},
+				{ Open : "(", Close : ")"}
+			];
+
+			MatchSet.forEach(function(Brace) {
+
+				//TODO chunk it up as some files might be too large and we will run out of memory in the Spidermonkey JS arena
+				var OpenCount = FileContents.split(Brace.Open).length -1;
+				var CloseCount = FileContents.split(Brace.Close).length -1;
+
+			});
+
+		}
+
+	});
+
+});
