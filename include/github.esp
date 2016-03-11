@@ -56,7 +56,8 @@
 								"number" : PullRequest["number"],
 								"state" : PullRequest["state"],
 								"title" : PullRequest["title"],
-								"sha1": ("head" in PullRequest && PullRequest["head"]) ? PullRequest["head"]["sha"] : ""
+								"sha1": ("head" in PullRequest && PullRequest["head"]) ? PullRequest["head"]["sha"] : "",
+								"repo" : ("repo" in PullRequest && PullRequest["repo"]) ? PullRequest["repo"]["name"] : ""
 							});
 						}
 					}

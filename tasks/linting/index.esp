@@ -6,7 +6,7 @@ var Logger = Server.Import("/include/log.esp");
 
 var MIN_PHP = Application.PHP_MIN_VERSION || "5.2";
 
-
+//This Lint function should be moved out into php directory - Need to make some consistent interfaces and have languages self contained
 var Lint = function(SHA1) {
 
 	var Status = 403;
@@ -72,10 +72,44 @@ var Lint = function(SHA1) {
 
 };
 
+
+//TODO refactor so that the webhooks have less copy pasta and use the same interfaces and error reporting mechanisms
+//then I can just import the appropriate module depending on webhooksetup (which will dictate language) ... or I could switch on the repo ...
+if (!Github.Hooks.pull(/^\/linting\/lint\/bondi/, Secret, function (Hook) {
+
+	var PullRequestNumber = Hook.number;
+	var Report = [];
+	var StaticAnalysisPass = false;
+	var Warnings = false;
+	var Errors = false;
+	var FilesMap = Github.PullRequests.Files(PullRequestNumber);
+
+	var LintResults = {status: 200};
+
+
+
+
+}
+
+
 if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 
 		var PullRequestNumber = Hook.number;
+		var Repo = Hook.repo.toLowerCase();
 		var LintResults = {status: 200};
+		var Report = [];
+		var StaticAnalysisPass = false;
+		var Warnings = false;
+		var Errors = false;
+
+		var Lint;
+		switch(Repo) {
+			case "codistoconnect" :
+				Lint = Server.Import("/tasks/linting/php/linter.esp")[FilesMap];
+			default:
+				Lint = Server.Import("/tasks/linting/bondi/linter.esp")[FilesMap];
+
+		}
 
 		switch (Hook.action) {
 			case "assigned" :
@@ -91,11 +125,6 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 			case "synchronize":
 				//fall through - another push to the branch the pull request is tracking
 			case "opened" :
-
-				var Report = [];
-				var StaticAnalysisPass = false;
-				var Warnings = false;
-				var Errors = false;
 
 				LintResults = Lint(Hook.sha1);
 
@@ -272,9 +301,3 @@ if (!Github.Hooks.pull(/^\/linting\/lint/, Secret, function (Hook) {
 }
 
 Github.Hooks.process();
-
-
-
-
-
-
