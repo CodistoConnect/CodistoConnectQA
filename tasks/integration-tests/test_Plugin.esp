@@ -61,8 +61,8 @@ QUnit.test('PluginInstall', function(assert){
 	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
 
 	//check plugin size is OK
-	var MinSize = 20 * 1024;
-	var MaxSize = 50 * 1024;
+	var MinSize = 50 * 1024;
+	var MaxSize = 100 * 1024;
 	var ActualSize = h.ResponseBody.length;
 
 	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
@@ -204,8 +204,8 @@ QUnit.test('PluginResellerInstall', function(assert){
 	assert.equal(h.Status, 200, "plugin build http status should be 200 was " + h.Status);
 
 	//check plugin size is OK
-	var MinSize = 20 * 1024;
-	var MaxSize = 50 * 1024;
+	var MinSize = 50 * 1024;
+	var MaxSize = 100 * 1024;
 	var ActualSize = h.ResponseBody.length;
 
 	assert.ok(ActualSize >= MinSize && ActualSize <= MaxSize , "Plugin size should be between " + MinSize + " bytes and " + MaxSize + " bytes , was " + ActualSize + " bytes");
