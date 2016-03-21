@@ -1,291 +1,367 @@
-var Github = Server.Import("/include/github.esp");
-var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
-var Secret = Application.GITHUBWEBHOOKSECRET;
-var SlackRoomToken = Application.SLACKROOMTOKEN;
-var Logger = Server.Import("/include/log.esp");
+var PluginDispatch =(function(URL) {
 
-if("BUILD" in Request.ServerVariables) {
-	//TODO do all buld related work in sub process so main process can respond to github webhook quickly.
-	Response.End();
-};
+	var GithubAccessToken = Application.GITHUB_ACCESS_TOKEN;
+	var Secret = Application.GITHUBWEBHOOKSECRET;
+	var SlackRoomToken = Application.SLACKROOMTOKEN;
 
+	var Logger = Server.Import("/include/log.esp");
+	var Github = Server.Import("/include/github.esp");
 
-var ServeFile = function(FilePath, DownloadFileName) {
-
-	if(File.IsFile(FilePath)) {
-
-		Debug.LogInfo("Serving");
-		Response.Status = "200 OK";
-		Response.ContentType = "application/x-gzip";
-		Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
-		Response.Pragma = "no-cache";
-		Response.Expires = 0;
-
-		var FileName;
-		var FileComponents = FilePath.split("/");
-		var FileName = DownloadFileName || FileComponents[FileComponents.length -1];
-
-		Response.Headers["Content-disposition"] =  "attachment;filename=" + FileName;
-		Response.SendFile(FilePath);
-
-	} else {
-
-		Response.Status = "404 Not Found";
-		Response.Write();
-	}
-	Response.End();
-};
-
-var BuildPlugin = function(Branch, SHA1, ResellerKey, TestMode) {
-
-	//Make a request to sandringham wrapped bash script to pull latest version of branch OR specific SHA1
-	var Status = 403;
-	var PluginVersion;
-	var PluginPath;
-
-	try {
-
-		var FCGIReq = new FastCGIClient();
-
-		SHA1 = SHA1 || 'n/a';
-		ResellerKey = ResellerKey || 'n/a';
-
-		var FCGIURL = "fastcgi://127.0.0.1:6971/pluginbuild?branch=" + Branch + "&stashpop=1&sha1=" + SHA1 + "&RESELLERKEY=" + ResellerKey + "&GITHUBTOKEN=" + GithubAccessToken;
-
-		if(TestMode) {
-			FCGIURL = FCGIURL + "&TEST=1";
-		}
-
-		Debug.LogInfo("Sending Request " + FCGIURL);
-
-		//make all arguments mandatory so it is serial on the other side
-		FCGIReq.Open("POST", FCGIURL);
-		FCGIReq.Send();
-
-		var ResponseBody = FCGIReq.ResponseBody.split("\n");
-
-		//Plugin details is the last thing written to STDOUT in the sub process (before the EOL that echo writes)
-		Status = FCGIReq.Status;
-		var PluginDetails = ResponseBody[ResponseBody.length - 2].split("~~");
-
-		Debug.LogInfo("PluginDetails are " + JSON.stringify(PluginDetails));
-
-		PluginVersion = PluginDetails[0];
-		PluginPath = PluginDetails[1];
-
-
-	} catch(e) {
-			Debug.LogInfo(e.toSource());
-	}
-
-	return {
-		Status: Status ,
-		PluginVersion: PluginVersion,
-		PluginPath: PluginPath
+	/*
+	if("BUILD" in Request.ServerVariables) {
+		//TODO do all buld related work in sub process so main process can respond to github webhook quickly.
+		Response.End();
 	};
+	*/
 
-};
+	var ServeFile = function(FilePath, DownloadFileName) {
 
-//A couple of aliases
-if(Request.ServerVariables.URL == "/plugin/getstable") {
-	Response.Headers.Location = "/plugin/CodistoConnect.tgz";
-} else if(Request.ServerVariables.URL == "/plugin/getbeta") {
-	Response.Headers.Location = "/plugin/CodistoConnect-beta.tgz";
-} else {
+		if(File.IsFile(FilePath)) {
 
-	var FilePath = decodeURIComponent(Request.ServerVariables.URL.replace(/\?.*/, "").replace(/\/$/, "/index.html"));
+			Debug.LogInfo("Serving " + FilePath);
 
-	if(Request.ServerVariables.URL == "/plugin/magentoconnect") {
+			Response.Status = "200 OK";
+			Response.ContentType = "application/x-gzip";
+			Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+			Response.Pragma = "no-cache";
+			Response.Expires = 0;
 
-		var ConfigData = File.Open("/tasks/plugin/example-config.php").Read();
-		var ExtensionVersion = ConfigData.indexOf("extension_version");
-		ExtensionVersion = ConfigData.indexOf("=>", ExtensionVersion + 1);
-		ExtensionVersion = ConfigData.substring(ExtensionVersion, ConfigData.indexOf("\n", ExtensionVersion));
-		ExtensionVersion = ExtensionVersion.split("'")[1];
+			var FileName;
+			var FileComponents = FilePath.split("/");
+			var FileName = DownloadFileName || FileComponents[FileComponents.length -1];
 
-		ServeFile("/tasks/plugin/CodistoConnect.tgz", "codistoconnect-" + ExtensionVersion + ".tgz");
-
-	} else if(FilePath == "/plugin/CodistoConnect-beta.tgz") {
-
-		ServeFile("/tasks/plugin/CodistoConnect-beta.tgz");
-
-	} else if(FilePath == "/plugin/CodistoConnect.tgz") {
-
-		ServeFile("/tasks/plugin/CodistoConnect.tgz");
-
-	}
-}
-
-if(/^\/plugin\/install/.test(Request.ServerVariables.URL)) {
-
-
-	var PluginToken = "{PLUGIN_FETCH}";
-	var F = File.Open("/tasks/plugin/install.sh");
-	var InstallScript = F.Read().split("\\n"); //its not splitting by just new lines /dev/null is captured too
-
-	for(var i = 0; i < InstallScript.length; i++) {
-
-		var InstallLine = InstallScript[i];
-
-		if(InstallLine.indexOf(PluginToken) > 0){
-
-			if("branch" in Request.QueryString && Request.QueryString["branch"]) {
-
-				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?branch="
-				+ Request.QueryString["branch"] + "&download=1\"");
-
-			} else if("sha1" in Request.QueryString && Request.QueryString["sha1"]){
-
-				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?sha1="
-				+ Request.QueryString["sha1"] + "&download=1\"");
-
-			} else {
-				InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz https://qa.codisto.com/plugin/getstable");
-			}
-		}
-	}
-
-	Response.Status = 200;
-	Response.ContentType = "text/plain";
-	Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
-	Response.Pragma = "no-cache";
-	Response.Expires = 0;
-	Response.Write(InstallScript);
-
-}
-
-if(/^\/plugin\/check/.test(Request.ServerVariables.URL)) {
-
-	//TODO implement either update matrix literals here or DB calls
-	throw "Not Implemented";
-
-
-}
-
-if(/^\/plugin\/build\/manual/.test(Request.ServerVariables.URL)) {
-
-	if ("HTTP_X_CODISTO_BUILD" in Request.ServerVariables && Request.ServerVariables.HTTP_X_CODISTO_BUILD) {
-
-		var Branch = Request.QueryString.branch;
-		var SHA1 = Request.QueryString.sha1;
-		var ResellerKey = Request.QueryString.resellerkey;
-		var TestMode = (("test" in Request.QueryString) && (Request.QueryString.test))
-
-		if (Branch || SHA1) {
-
-			var BuildResult = BuildPlugin(Branch, SHA1, ResellerKey, TestMode);
-
-			Response.Status = BuildResult.Status;
-
-			Logger.Log("PLUGIN", "Building complete - Status " + JSON.stringify(BuildResult), "Complete");
-
-			if (Response.Status == 200 && "download" in Request.QueryString && Request.QueryString.download) {
-
-				Logger.Log("PLUGIN", "Download requested ", "Serving");
-				ServeFile("/tasks/plugin/" + BuildResult.PluginPath);
-			}
-
-			Response.Write(Response.Status == 200 ? "OK" : "Error");
+			Response.Headers["Content-disposition"] =  "attachment;filename=" + FileName;
+			Response.SendFile(FilePath);
 
 		} else {
 
-			Response.Status = 403;
+			Response.Status = "404 Not Found";
+			Response.Write();
 		}
-	} else {
+		Response.End();
+	};
 
-		Response.Status = 403;
+	var CheckoutSHA = function(Path, SHA1, StashPop) {
+
+		try {
+
+			Debug.LogInfo("Sending Request " + FCGIURL);
+			var FCGIURL = "fastcgi://127.0.0.1:6971/githelper?PATH=" + Path + "&SHA1=" + SHA1 + "&STASHPOP=" + StashPop;
+			FCGIReq.Open("POST", FCGIURL);
+			FCGIReq.Send();
+
+			var GitHelperResponse = FCGIReq.ResponseText.split("|");
+			return {
+				status : GitHelperResponse[0],
+				sha1 : GitHelperResponse[1],
+				branch : GitHelperResponse[2]
+			};
+
+		}
+		catch(e) {
+			Debug.LogInfo("Failed to Checkout SHA " + SHA1 + e.toSource());
+			return false;
+		}
+	};
+
+
+	var ReleaseAndTag = function(TagName, SHA1, PluginType) {
+
+		var TagName = TagName;
+		var TargetCommitSha = SHA1;
+		var ReleaseName;
+
+		switch(PluginType) {
+			case "magento":
+				//Use the same release nomenclature for codisto and woo for now.
+			case "woo":
+				ReleaseName = "v" + TagName;
+				break;
+		}
+
+		var TagDescription = ["![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)",
+			"","# Release " + TagName,"",
+			"## [Changelog] (https://github.com/CodistoConnect/CodistoConnect/blob/" + TagName + "/CHANGELOG.md)"].join("\n");
+
+		var PreRelease = false;
+
+		var AssetPath;
+		switch(PluginType) {
+			case "magento":
+				AssetPath = "/tasks/plugin/CodistoConnect.tgz";
+				break;
+			case "woo":
+				AssetPath = "/tasks/plugin/CodistoConnect-WooCommerce.zip";
+				break;
+		}
+
+		Logger.Log("GITHUB", ["Creating Release ", "TagName(", TagName, ") SHA1(" , TargetCommitSha, ")",
+			" Release Name ", ReleaseName, " TagDescription(" ,TagDescription, ")"].join(""), "Release");
+
+		return Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
+
 	}
-}
 
+	var BuildPlugin = function(PluginType, SHA1, ResellerKey, ReleaseAndTag, TestMode, Download) {
 
-//subscribe to various github webhooks
-Github.Hooks.push(/^\/plugin\/integration-tests/, Secret, function(Hook){
+		var Status = 403;
+		var PluginVersion;
+		var PluginPath;
+		var PluginBuildAction;
 
-	if(Hook.branch == "master") {
-			Debug.LogInfo("Executing integration-tests");
-			Server.Execute("/tasks/integration-tests/tests.esp");
-	}
+		switch(PluginType) {
+			case "magento":
+				PluginPath = Application["BONDI_APPROOT"] + "/CodistoConnect";
+				PluginBuildAction = "pluginbuildmagento?";
+				break;
+			case "woo":
+				PluginPath = Application["BONDI_APPROOT"] + "/CodistoConnect-WooCommerce";
+				PluginBuildAction = "pluginbuildwoo?";
+				break;
+		}
 
-	Response.End();
+		var CheckedOutStatus = CheckoutSHA(PluginPath, SHA1, false);
+		if(CheckedOutStatus) {
 
-});
+			try {
 
+				var FCGIReq = new FastCGIClient();
 
-Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
+				var FCGIURL = "fastcgi://127.0.0.1:6971/" + PluginBuildAction +
+				["GITHUBTOKEN=", GithubAccessToken,
+				 "PLUGINPATH=" , PluginPath,
+				 "BUILDPATH=", '',
+				 "TEST=", TestMode ? "1" : 0,
+				 "RESELLERKEY=", ResellerKey || 'n/a'].join('');
 
-	if(Hook.branch == "development" || Hook.branch == "master") {
+				Debug.LogInfo("Sending Request " + FCGIURL);
+				FCGIReq.Open("POST", FCGIURL);
+				FCGIReq.Send();
 
-		//When we update the data-install etc and add second commit and push another web hook receive will happen.. don't build if we know that is the case
-		//also don't build if the commit message contains [plugin skip]
-		if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog" && Hook.message.indexOf("[plugin skip]") == -1) {
+				var ResponseBody = FCGIReq.ResponseBody.split("\n");
 
-			var BuildStatus = BuildPlugin(Hook.branch, Hook.sha1);
+				//Plugin details is the last thing written to STDOUT in the sub process (before the EOL that echo writes)
+				Status = FCGIReq.Status;
+				var PluginDetails = ResponseBody[ResponseBody.length - 2].split("~~");
 
-			if(BuildStatus.Status == 200) {
+				Debug.LogInfo("PluginDetails are " + JSON.stringify(PluginDetails));
 
-				if(Hook.branch == "master") {
+				PluginVersion = PluginDetails[0];
+				PluginPath = PluginDetails[1];
 
-					var TagName = BuildStatus.PluginVersion;
-					var TargetCommitSha = Hook.sha1;
-					var ReleaseName = "v" + BuildStatus.PluginVersion;
+				if(ReleaseAndTag) {
 
-					var TagDescription = ["![CodistoConnect eBay better logo](https://s3-ap-southeast-2.amazonaws.com/codisto/CodistoHeaderLogo.jpg)",
-						"","# Release " + BuildStatus.PluginVersion,"",
-						"## [Changelog] (https://github.com/CodistoConnect/CodistoConnect/blob/" + BuildStatus.PluginVersion + "/CHANGELOG.md)"].join("\n");
+					if(BuildStatus.Status == 200) {
 
-					var PreRelease = false;
-					var AssetPath = "/tasks/plugin/CodistoConnect.tgz";
+						if(Hook.branch == "master" && PluginType) {
 
-					Logger.Log("GITHUB", ["Creating Release ", "TagName(", TagName, ") SHA1(" , TargetCommitSha, ")",
-						" Release Name ", ReleaseName, " TagDescription(" ,TagDescription, ")"].join(""), "Release");
+							var Tagged = ReleaseAndTag(PluginVersion, Hook.sha1, PluginType);
 
-					Github.Releases.Create(TagName, TargetCommitSha, ReleaseName, TagDescription, PreRelease, AssetPath);
+							if(Tagged.Status == "OK") {
 
-					//Send notification to Slack room to inform developers a new build has been releases
-					Logger.Log("GITHUB", "Notifying developers release is ready", "Notifying in Slack");
-
-
-					var SlackMessage =	{
-						"room_token" : SlackRoomToken,
-						"request" :
-						{
-							"username": "CodistoConnect",
-							"attachments":
-								[
+								//Send notification to Slack room to inform developers a new build has been releases
+								Logger.Log("GITHUB", "Notifying developers release is ready", "Notifying in Slack");
+								var SlackMessage =	{
+									"room_token" : SlackRoomToken,
+									"request" :
 									{
-										"fallback": "New Github release created - " + ReleaseName,
-										"pretext": "New Github release deployed successfully",
-										"color":"#62CF6F",
-										"fields":
+										"username": "CodistoConnect",
+										"attachments":
 											[
 												{
-													"title":"New Github release created - " + ReleaseName,
-													"value": "https://github.com/CodistoConnect/CodistoConnect/releases/latest",
-													"short":false
+													"fallback": "New Github release created - " + ReleaseName,
+													"pretext": "New Github release deployed successfully",
+													"color":"#62CF6F",
+													"fields":
+														[
+															{
+																"title":"New Github release created - " + ReleaseName,
+																"value": "https://github.com/CodistoConnect/CodistoConnect/releases/latest",
+																"short":false
+															}
+														]
 												}
 											]
 									}
-								]
+								};
+								Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
+							}
 						}
-					};
-
-					Server.ExecuteAsyncNoReturn("/include/slack.esp", "", SlackMessage);
-
+					}
 				}
 
+
+			} catch(e) {
+					Debug.LogInfo(e.toSource());
 			}
 
-			Response.Status = BuildStatus.Status;
-			Response.Write(Response.Status == 200 ? "OK": "Error");
+			return {
+				Status: Status ,
+				PluginVersion: PluginVersion,
+				PluginPath: PluginPath
+			};
 		}
+	};
 
-		Response.End();
+	var EndPointMap = {
 
+		"/plugin/getstable" : function() { ServeFile("/tasks/plugin/CodistoConnect.tgz") },
+		"/plugin/getbeta" : function() { ServeFile("/tasks/plugin/CodistoConnect-beta.tgz") },
+		"/plugin/magento/getstable" : function() { ServeFile("/tasks/plugin/CodistoConnect.tgz") },
+		"/plugin/magento/getbeta" : function() { ServeFile("/tasks/plugin/CodistoConnect-beta.tgz")},
+		"/plugin/magentoconnect" : function() {
 
-	} else {
-		Response.Status = 403;
-		Debug.LogInfo("A branch was pushed - however it was not master/development\n Details are " + JSON.stringify(Hook));
+			//Provides the latest stable version of Codisto Connect with Magento Connect naming conventions
+			var ConfigData = File.Open("/tasks/plugin/example-config.php").Read();
+			var ExtensionVersion = ConfigData.indexOf("extension_version");
+			ExtensionVersion = ConfigData.indexOf("=>", ExtensionVersion + 1);
+			ExtensionVersion = ConfigData.substring(ExtensionVersion, ConfigData.indexOf("\n", ExtensionVersion));
+			ExtensionVersion = ExtensionVersion.split("'")[1];
+
+			ServeFile("/tasks/plugin/CodistoConnect.tgz", "codistoconnect-" + ExtensionVersion + ".tgz");
+		},
+		"/plugin/woo/getstable" : function() { ServeFile("/tasks/plugin/MarketPlaceConnect.tgz") },
+		"/plugin/woo/getbeta" : function() { ServeFile("/tasks/plugin/MarketPlaceConnect-beta.tgz") },
+		"/plugin/install" : function() {
+
+			//Install bootstrap script for Magento
+			var PluginToken = "{PLUGIN_FETCH}";
+			var F = File.Open("/tasks/plugin/install.sh");
+			var InstallScript = F.Read().split("\\n"); //its not splitting by just new lines /dev/null is captured too
+
+			for(var i = 0; i < InstallScript.length; i++) {
+
+				var InstallLine = InstallScript[i];
+
+				if(InstallLine.indexOf(PluginToken) > 0){
+
+					if("branch" in Request.QueryString && Request.QueryString["branch"]) {
+
+						InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?branch="
+						+ Request.QueryString["branch"] + "&download=1\"");
+
+					} else if("sha1" in Request.QueryString && Request.QueryString["sha1"]){
+
+						InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz --header=\"x-codisto-build:1\" \"https://qa.codisto.com/plugin/build/manual?sha1="
+						+ Request.QueryString["sha1"] + "&download=1\"");
+
+					} else {
+						InstallScript[i] = InstallLine.replace(PluginToken, "wget -O plugin.tgz https://qa.codisto.com/plugin/getstable");
+					}
+				}
+			}
+
+			Response.Status = 200;
+			Response.ContentType = "text/plain";
+			Response["Cache-Control"] = "no-cache, no-store, must-revalidate";
+			Response.Pragma = "no-cache";
+			Response.Expires = 0;
+			Response.Write(InstallScript);
+		},
+		"/plugin/build/manual" : function() {
+
+				if ("HTTP_X_CODISTO_BUILD" in Request.ServerVariables && Request.ServerVariables.HTTP_X_CODISTO_BUILD) {
+
+					var Branch = Request.QueryString.branch; // You can specify a SHA1 hash here too
+					var ResellerKey = Request.QueryString.resellerkey;
+					var PluginType = Request.QueryString.plugintype; //woo or magento
+					var TestMode = (("test" in Request.QueryString) && (Request.QueryString.test));
+					var Download = (("download" in Request.QueryString) && (Request.QueryString.download));
+					var ReleaseAndTag = false;
+
+					if (Branch && PluginType) {
+
+						var BuildResult = BuildPlugin(PluginType, Branch, ResellerKey, ReleaseAndTag, TestMode, Download);
+
+						Response.Status = BuildResult.Status;
+
+						Logger.Log("PLUGIN", "Building complete - Status " + JSON.stringify(BuildResult), "Complete");
+
+						if (Response.Status == 200 && Download) {
+
+							Logger.Log("PLUGIN", "Download requested ", "Serving");
+							ServeFile("/tasks/plugin/" + BuildResult.PluginPath);
+						}
+
+						Response.Write(Response.Status == 200 ? "OK" : "Error");
+
+					} else {
+
+						Response.Status = 403;
+					}
+				} else {
+
+					Response.Status = 403;
+				}
+		}
 	}
-});
 
-Github.Hooks.process();
+	return {
+
+		ProcessURL : function(URL) {
+			if(URL in EndPointMap) {
+				EndPointMap[URL]();
+			}
+		},
+		ProcessGithubWebHooks: function() {
+
+			//Subscribe to various github webhooks
+			Github.Hooks.push(/^\/plugin\/integration-tests/, Secret, function(Hook){
+
+				if(Hook.branch == "master") {
+						Debug.LogInfo("Executing integration-tests");
+						Server.Execute("/tasks/integration-tests/tests.esp");
+				}
+
+				Response.End();
+
+			});
+
+			//TODO Make this handle WOO AND Connect and provide interface for Magento 2 etc
+			Github.Hooks.push(/^\/plugin\/build/, Secret, function(Hook){
+
+				if(Hook.branch == "development" || Hook.branch == "master") {
+
+					//When we update the data-install etc and add second commit and push another web hook receive will happen.. don't build if we know that is the case
+					//also don't build if the commit message contains [plugin skip]
+					if(Hook.message != "BOT - Update data-install.php , bump plugin version and generate new changelog" && Hook.message.indexOf("[plugin skip]") == -1) {
+
+						var PluginType;
+
+						switch(Hook.repo) {
+							case "CodistoConnect/CodistoConnect":
+								PluginType = "magento";
+								break;
+							case "CodistoConnect/CodistoConnect-WooCommerce":
+								PluginType = "woo";
+								break;
+						}
+
+						var ResellerKey = "";
+						var ReleaseAndTag = true;
+						var TestMode = false;
+						var Download = false;
+
+						var BuildStatus = BuildPlugin(PluginType, Hook.sha1, ResellerKey, ReleaseAndTag, TestMode, Download);
+
+						Response.Status = BuildStatus.Status;
+						Response.Write(Response.Status == 200 ? "OK": "Error");
+					}
+
+					Response.End();
+
+				} else {
+					Response.Status = 403;
+					Debug.LogInfo("A branch was pushed - however it was not master/development\n Details are " + JSON.stringify(Hook));
+				}
+			});
+
+			Github.Hooks.process();
+
+		}
+	}
+
+})();
+
+PluginDispatch.ProcessURL(Request.ServerVariables.URL);
+PluginDispatch.ProcessGithubWebHooks();

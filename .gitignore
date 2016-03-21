@@ -1,5 +1,6 @@
 *.db
 *.tgz
+tasks/plugin/magento/src
 tasks/plugin/src
 tasks/plugin/extensionbuildlog.txt
 tasks/plugin/example-config.php

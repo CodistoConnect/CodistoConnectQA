@@ -1,41 +1,18 @@
 #!/bin/bash
+logger -s "Codisto Connect build commencing"
+exit 0
 
-#NOTES - the php script requires components of magento to work and as such magento needs to be downloaded into the PLUGINPATH/src
+#TODO rewrite this with functions to match Woo implementation and make sure the same input is handled //{GITHUBTOKEN} {PLUGINPATH} {BUILDPATH} {TEST} {RESELLERKEY}
 
-#The branch to use to package up (Default development)
-BRANCH=$1
+#NOTES - The php script to package Codisto Connect requires components of Magento to work and as such, Magento src needs to be located in PLUGINPATH/src
 
-#Determines if stashing current state before pull or checking out a specific SHA occurs followed by popping after the action is completed
-STASHPOP=$2
+RESELLER=${1}
+GITHUBTOKEN=${2}
+TEST=${3}
 
-#The specific SHA1 hash of the commit to checkout
-SHA1=$3
-
-#Resellerkey
-RESELLER=$4
-
-GITHUBTOKEN=$5
-
-TEST=$6
-
-#Variables that might be set but have empty values should be unset to simplify logic below
-if [[ $SHA1 ]]; then
-	if [[ ${SHA1} ]]; then
-		if [[ $SHA1 = "n/a" ]]; then
-			logger -s "SHA1 variable exists but is set to n/a so unset"
-			unset SHA1
-		else
-			logger -s "SHA1 variable exists and is set and all good"
-		fi
-	else
-		logger -s "SHA1 variable exists but is empty so unsetting"
-		unset SHA1
-	fi
-fi
-
-if [[ $RESELLER ]]; then
+if [[ ${RESELLER} ]]; then
 	if [[ ${RESELLER} ]]; then
-		if [[ $RESELLER = "n/a" ]]; then
+		if [[ ${RESELLER} = "n/a" ]]; then
 			logger -s "RESELLER variable exists but is set to n/a so unset"
 			unset RESELLER
 		else
@@ -47,14 +24,12 @@ if [[ $RESELLER ]]; then
 	fi
 fi
 
-logger -s "Arguments are $@"
-
 if [ -z ${SCRIPTPATH+x} ]; then
-	SCRIPTPATH="$HOME/approot/CodistoConnectQA/tasks/plugin"
+	SCRIPTPATH="${HOME}/approot/CodistoConnectQA/tasks/plugin"
 fi
 
 if [ -z ${PLUGINPATH+x} ]; then
-	PLUGINPATH="$HOME/approot/CodistoConnect"
+	PLUGINPATH="${HOME}/approot/CodistoConnect"
 fi
 
 if [ -z ${BRANCH+y} ]; then
@@ -63,7 +38,7 @@ fi
 
 if [ -z ${BUILDPATH+y} ]; then
 	BUILDPATH="/tmp/build/"
-	mkdir -p $BUILDPATH
+	mkdir -p ${BUILDPATH}
 fi
 
 logger -s "Using the following paths "
@@ -72,50 +47,11 @@ logger -s "PLUGINPATH=$PLUGINPATH"
 logger -s "BRANCH=$BRANCH"
 logger -s "BUILDPATH=$BUILDPATH"
 
-logger -s "Using the followoing options"
-logger -s "STASHPOP=$STASHPOP"
-logger -s "SHA1=$SHA1"
+logger -s "Using the following options"
 logger -s "RESELLER=$RESELLER"
 logger -s "GITHUBTOKEN=$GITHUBTOKEN"
 logger -s "TEST=$TEST"
 
-cd $PLUGINPATH
-
-logger -s "CURRENT SHA1=$(git rev-parse HEAD)"
-
-if [ -n $STASHPOP ]; then
-	if [ -z ${TEST} ]; then
-		logger -s "STASHING"
-		git stash
-	fi
-fi
-
-#Make sure all remotes are up to date before we pull or checkout SHA's which might not exist
-git fetch --all --prune
-git fetch --prune origin +refs/tags/*:refs/tags/*
-
-if [[ $SHA1 ]]; then
-
-	#Pull specific SHA1 - This is ideal for web hook receive - you can redeliver a packet and it will checkout correct SHA and create correct tag etc
-	logger -s "SHA1 was specified so checking out commit $SHA1"
-	git checkout $SHA1 --force
-
-else
-
-	#If no specific SHA was specified then pull latest code
-	logger -s "No SHA1 was specified so checking out $BRANCH and pulling"
-	git checkout $BRANCH
-	git pull
-
-fi
-
-if [[ $STASHPOP ]]; then
-
-	if [ -z ${TEST} ]; then
-		git stash pop
-	fi
-
-fi
 
 #Save current SHA1 for CodistoConnect repo
 cd $PLUGINPATH
@@ -131,7 +67,7 @@ logger -s "PLUGINVERSION is $PLUGINVERSION"
 
 if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
- 	logger -s "Master was pushed and reseller was not specified so I'm doing full build"
+ 	logger -s "Master was pushed and reseller was not specified so I'm doing a full build"
 	logger -s "Master branch has been pushed - Updating everything"
 
 	#Let's update the plugin version
@@ -147,12 +83,12 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 	logger -s "Bumping version to $PLUGINVERSION"
 
 	#Let's update data-install in code/community/Codisto/Sync/data/codisto_setup must have a matching file suffix to the plugin version. Let's rename it to match, commit the change and push with a particular commit message
-	DATAINSTALLFNAME=`find -name "data-install-*" -type f -printf "%f"`
+	DATAINSTALLFNAME=$( find -name "data-install-*" -type f -printf "%f" )
 
-	logger -s "Updating version of $DATAINSTALLFNAME to data-install-$PLUGINVERSION.php"
-	logger -s "Renaming $PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/$DATAINSTALLFNAME to $PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
+	logger -s "Updating version of ${DATAINSTALLFNAME} to data-install-${PLUGINVERSION}.php"
+	logger -s "Renaming ${PLUGINPATH}/code/community/Codisto/Sync/data/codisto_setup/${DATAINSTALLFNAME} to ${PLUGINPATH}/code/community/Codisto/Sync/data/codisto_setup/data-install-${PLUGINVERSION}.php"
 
-	mv "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/$DATAINSTALLFNAME" "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
+	mv "${PLUGINPATH}/code/community/Codisto/Sync/data/codisto_setup/${DATAINSTALLFNAME}" "${PLUGINPATH}/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
 
 	logger -s "Commiting change to data-install"
 
@@ -185,9 +121,10 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 		logger -s "git add $PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 		git add "$PLUGINPATH/code/community/Codisto/Sync/etc/config.xml"
 
+
 		#Delete tag if it exists, create a new tag with the plugin version (this tag is used by the changelog generator)
 		git tag -d "$PLUGINVERSION"
-		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"
+		git tag -a "$PLUGINVERSION" -m "Version $PLUGINVERSION"  #WARNING - The tag is being created but no config has been commited yet here is the
 
 		#Generate a new CHANGELOG.md (it will use the tag that was just created locally)
 		rm CHANGELOG.md --force
@@ -216,8 +153,6 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	fi
 
-
-
   if [ -z ${TEST} ]; then
 
 			#checkout development branch of the specific SHA
@@ -242,7 +177,7 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	cd $PLUGINPATH
 
-fi
+fi #end of master and not reseller
 
 #Make sure Reseller is set and not empty. If so add in xml node to config
 if [[ $RESELLER ]]; then
@@ -354,6 +289,8 @@ else
   logger -s "PLUGIN PATH IS $PLUGINPATH"
 	cd $PLUGINPATH && git reset --hard && git clean -dfx --force
 fi
+
+logger -s "Codisto Connect build completed"
 
 #Leave plugin version and path to plugin as last line in STDOUT to be captured
 echo "$PLUGINVERSION~~$PLUGINFNAME"
