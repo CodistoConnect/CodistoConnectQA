@@ -18,7 +18,8 @@ BUILDPATH=${3}
 TEST=${4}
 RESELLERKEY=${5}
 CONFIGFILE="${PLUGINPATH}/readme.txt"
-GITHUBARTIFACT="CodistoConnect-WooCommerce.zip"
+GITHUBARTIFACT="CodistoConnect-WooCommerce"
+GITHUBEXTENSION=".zip"
 
 
 if [ ${DEBUGVERBOSE} = 1 ]; then
@@ -130,10 +131,18 @@ getgitmetadata ()
 #This is only used to package up as a zip archive and add as a release artifact
 packageplugin ()
 {
+	if [ "${BRANCH}" = "development" ]; then
+		SUFFIX="-beta"
+	elif [ "${BRANCH}" != "master" ]; then
+		SUFFIX="($BRANCH)"
+	fi
+
+	ARTIFACTPATH=${BUILDPATH}${GITHUBARTIFACT}${SUFFIX}${GITHUBEXTENSION}
+	log "Packaging ${PLUGINPATH} into build artifact ${ARTIFACTPATH}"
 	#Compress files ready to go
-	ZIPSTDOUT=$(zip -r ${BUILDPATH}${GITHUBARTIFACT} ${PLUGINPATH})
+	ZIPSTDOUT=$(zip -r ${ARTIFACTPATH} ${PLUGINPATH})
 	log ${ZIPSTDOUT}
-	echo ${BUILDPATH}${GITHUBARTIFACT}
+	echo "${ARTIFACTPATH}"
 }
 
 #This will upload via SVN here. On Codisto Connect version it will upload to QA box and scp to chaos etc
@@ -251,21 +260,46 @@ buildplugin ()
 			log "Pushing master to remote"
 			git push origin master --force
 			#		Checkout the DEVSHA that made its way into master
+			log "Checking out development branch with sha of ${DEVSHA}"
+			git checkout ${DEVSHA} --force
 			#		Backport the tag created for this plugin version (Merge the tag)
+			git merge ${PLUGINVERSION} --no-ff --no-edit
 			#		Delete current development and checkout current sha as development
+			git branch -D development
+			git checkout -b development
 			#		For push development
+			log "Pushing development"
+			git push origin development --force
 		fi
+		#End If
+		#	If reseller
+		if [ -n ${RESELLER} ]; then
+		#		Update configuration file with Reseller data if applicable
+			log "RESELLER flag specified but not used. Ignoring"
+		#	End If
+		fi
+		#	Create archive in builddir with contents of pluginpath (Package it)
+		PLUGINFNAME=$(packageplugin ${BRANCH})
+
+		#	If NOT Reseller
+		if [ -z ${RESELLER} ]; then
+			# If Branch is master or development and NOT test mode
+			if  [ "${BRANCH}" == "development" ]  || [ "${BRANCH}" == "master" ] && [ -z ${TEST} ]; then
+				# Deploy the plugin (copy to chaos via scp) for Woo this also means updating readme.txt with changelog text and making a new subversion commit.
+				uploadplugin
+				# End If
+			fi
+		#	End if
+		fi
+		#	Reset all state
+		cd ${PLUGINPATH} && git reset --hard && git clean -dfx --force
 
 	fi
 
-
-	PLUGINFNAME=$(packageplugin)
-
 	log "Marketplace Connect plugin build completed ..."
 
-	#Used by serverside JS to create releases and upload artifacts etc
+	#Used by serverside JS to create releases and upload artifacts etc as the last thing written to STDOUT becomes ResponseBody
 	echo "$PLUGINVERSION~~$PLUGINFNAME"
-
 }
 
 setup

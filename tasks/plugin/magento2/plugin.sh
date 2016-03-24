@@ -13,4 +13,5 @@ BUILDPATH=${3}
 TEST=${4}
 RESELLERKEY=${5}
 CONFIGFILE="${PLUGINPATH}/code/community/Codisto/Sync/etc/config.xml"
-GITHUBARTIFACT="CodistoConnect-Magento2.zip"
+GITHUBARTIFACT="CodistoConnect-Magento2"
+GITHUBEXTENSION=".zip"
