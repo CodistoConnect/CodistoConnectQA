@@ -37,7 +37,7 @@ QUnit.test('PluginBuiltFCGIProto', function(assert){
 
 	Debug.LogInfo("PLUGIN VERSION IS " + PluginVersion);
 
-	var ValidVersion = /(\d.){2}\d+$/.test(PluginVersion);
+	var ValidVersion = /(\d+\.){2}\d+$/.test(PluginVersion);
 	assert.ok(ValidVersion, "Version was not in expected n.n.n.n format - was " + PluginVersion);
 
 	QUnit.testState["PluginVersion"] = PluginVersion;
