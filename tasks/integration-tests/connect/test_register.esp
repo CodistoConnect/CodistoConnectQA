@@ -20,7 +20,7 @@ QUnit.test('Installed', function(assert){
 			"line" : "n/a"
 		}
 
-		h.Send(JSON.stringify(InstalledOpts));
+		h.Send(InstalledOpts);
 
 		assert.ok(h.Status, 200);
 
@@ -50,7 +50,7 @@ QUnit.test('connectRegisterMerchant', function(assert){
 		"codistoversion" : "X.X.X.XX"
 	}
 
-	h.Send(JSON.stringify(CreateOpts));
+	h.Send(CreateOpts);
 
 	assert.ok(h.Status, 200);
 	assert.ok(h.ResponseText, "OK");
