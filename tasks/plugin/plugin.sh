@@ -146,20 +146,6 @@ if [ $BRANCH = "master" ] && [ -z $RESELLER ];	then
 
 	logger -s "Bumping version to $PLUGINVERSION"
 
-	#Let's update data-install in code/community/Codisto/Sync/data/codisto_setup must have a matching file suffix to the plugin version. Let's rename it to match, commit the change and push with a particular commit message
-	DATAINSTALLFNAME=`find -name "data-install-*" -type f -printf "%f"`
-
-	logger -s "Updating version of $DATAINSTALLFNAME to data-install-$PLUGINVERSION.php"
-	logger -s "Renaming $PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/$DATAINSTALLFNAME to $PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
-
-	mv "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/$DATAINSTALLFNAME" "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php"
-
-	logger -s "Commiting change to data-install"
-
-	if [ -z ${TEST} ]; then
-		git add "$PLUGINPATH/code/community/Codisto/Sync/data/codisto_setup/data-install-$PLUGINVERSION.php" -f
-	fi
-
 	#Lets update mysql4-install in code/community/Codisto/Sync/sql/codisto_setup must have matching file suffix to the plugin version so let's rename it to match
 
 	MYSQLINSTALLFNAME=`find -name "mysql4-install-*" -type f -printf "%f"`
