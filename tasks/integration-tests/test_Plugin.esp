@@ -100,6 +100,7 @@ QUnit.test('PluginInstall', function(assert){
 			"app/code/community/Codisto/Sync/Ebaypayment/Model/" :  true,
 			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/" :  true,
+			"app/code/community/Codisto/Sync/Helper/End.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/Data.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/Signal.php" : true,
 			"app/code/community/Codisto/Sync/Helper/CmsContent.php" : true,
