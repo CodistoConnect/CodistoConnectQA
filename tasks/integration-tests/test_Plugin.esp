@@ -100,6 +100,7 @@ QUnit.test('PluginInstall', function(assert){
 			"app/code/community/Codisto/Sync/Ebaypayment/Model/" :  true,
 			"app/code/community/Codisto/Sync/Ebaypayment/Model/Paymentmethod.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/" :  true,
+			"app/code/community/Codisto/Sync/Helper/End.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/Data.php" :  true,
 			"app/code/community/Codisto/Sync/Helper/Signal.php" : true,
 			"app/code/community/Codisto/Sync/Helper/CmsContent.php" : true,
@@ -137,8 +138,6 @@ QUnit.test('PluginInstall', function(assert){
 			"app/code/community/Codisto/Sync/controllers/CodistoController.php" :  true,
 			"app/code/community/Codisto/Sync/controllers/IndexController.php" :  true,
 			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
-			"app/code/community/Codisto/Sync/data/" :  true,
-			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
 			"app/code/community/Codisto/Sync/etc/" :  true,
 			"app/code/community/Codisto/Sync/etc/adminhtml.xml" :  true,
 			"app/code/community/Codisto/Sync/etc/config.xml" :  true,
@@ -158,7 +157,6 @@ QUnit.test('PluginInstall', function(assert){
 	var PluginVersion = QUnit.testState["PluginVersion"];
 
 	//Make sure the install files are present
-	ExpectedPaths["app/code/community/Codisto/Sync/data/codisto_setup/data-install-" + PluginVersion + ".php"] = true;
 	ExpectedPaths["app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-" + PluginVersion + ".php"] = true;
 
 	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
@@ -280,8 +278,6 @@ QUnit.test('PluginResellerInstall', function(assert){
 			"app/code/community/Codisto/Sync/controllers/CodistoController.php" :  true,
 			"app/code/community/Codisto/Sync/controllers/IndexController.php" :  true,
 			"app/code/community/Codisto/Sync/controllers/SyncController.php" :  true,
-			"app/code/community/Codisto/Sync/data/" :  true,
-			"app/code/community/Codisto/Sync/data/codisto_setup/" :  true,
 			"app/code/community/Codisto/Sync/Block/" : true,
 			"app/code/community/Codisto/Sync/Block/PaymentInfo.php" : true,
 			"app/code/community/Codisto/Sync/etc/" :  true,
@@ -305,7 +301,6 @@ QUnit.test('PluginResellerInstall', function(assert){
 	Debug.LogInfo("Looking for PluginVersion " + PluginVersion);
 
 	//Make sure the install files are present
-	ExpectedPaths["app/code/community/Codisto/Sync/data/codisto_setup/data-install-" + PluginVersion + ".php"] = true;
 	ExpectedPaths["app/code/community/Codisto/Sync/sql/codisto_setup/mysql4-install-" + PluginVersion + ".php"] = true;
 
 	//Now to get a dir listing inside the extracted file and make sure everything is A-OK
